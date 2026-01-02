@@ -1,13 +1,12 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, KeyRound, CheckCircle } from "lucide-react";
 import { z } from "zod";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,24 +17,47 @@ const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
-type AuthStep = "form" | "otp";
+const passwordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type AuthStep = "form" | "magic-link-sent" | "password-setup";
 
 const Auth = () => {
-  const { user, loading, signIn, sendOtp, verifyOtp } = useAuth();
+  const { 
+    user, 
+    loading, 
+    signIn, 
+    sendOtp, 
+    checkUserExists,
+    setPassword: updatePassword,
+    needsPasswordSetup,
+    setNeedsPasswordSetup
+  } = useAuth();
   const navigate = useNavigate();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<AuthStep>("form");
-  const [otpValue, setOtpValue] = useState("");
 
-  // Redirect if already logged in
-  if (user && !loading) {
+  // Redirect if already logged in and doesn't need password setup
+  if (user && !loading && !needsPasswordSetup) {
     return <Navigate to="/journal" replace />;
+  }
+
+  // Show password setup if user is logged in but needs to set password
+  if (user && needsPasswordSetup && step !== "password-setup") {
+    setStep("password-setup");
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +66,7 @@ const Auth = () => {
 
     if (isLogin) {
       // Login with password
-      const result = loginSchema.safeParse({ email, password });
+      const result = loginSchema.safeParse({ email, password: passwordValue });
       if (!result.success) {
         setError(result.error.errors[0].message);
         return;
@@ -62,7 +84,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(email, passwordValue);
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
             setError("Invalid email or password. Please try again.");
@@ -73,58 +95,46 @@ const Auth = () => {
         }
         navigate("/journal");
       } else {
-        // Send OTP for signup
-        const { error } = await sendOtp(email);
-        if (error) {
-          if (error.message.includes("already registered")) {
-            setError("This email is already registered. Please sign in instead.");
-          } else {
-            setError(error.message);
-          }
+        // Check if user already exists
+        const { exists } = await checkUserExists(email);
+        
+        if (exists) {
+          setError("An account with this email already exists. Please sign in instead.");
           return;
         }
-        setStep("otp");
+        
+        // Send magic link for new user
+        const { error } = await sendOtp(email);
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        setStep("magic-link-sent");
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (otpValue.length !== 6) {
-      setError("Please enter the complete 6-digit code");
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const result = passwordSchema.safeParse({ password: passwordValue, confirmPassword });
+    if (!result.success) {
+      setError(result.error.errors[0].message);
       return;
     }
 
-    setError("");
     setIsSubmitting(true);
 
     try {
-      const { error } = await verifyOtp(email, otpValue);
+      const { error } = await updatePassword(passwordValue);
       if (error) {
-        if (error.message.includes("expired")) {
-          setError("Code expired. Please request a new one.");
-        } else if (error.message.includes("invalid")) {
-          setError("Invalid code. Please check and try again.");
-        } else {
-          setError(error.message);
-        }
+        setError(error.message);
         return;
       }
       navigate("/journal");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError("");
-    setIsSubmitting(true);
-    try {
-      const { error } = await sendOtp(email);
-      if (error) {
-        setError(error.message);
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -150,64 +160,118 @@ const Auth = () => {
       {/* Auth Form */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md">
-          {step === "otp" ? (
-            // OTP Verification Step
+          {step === "password-setup" ? (
+            // Password Setup Step
+            <div className="opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+                  <KeyRound className="w-8 h-8 text-primary" />
+                </div>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+                  Set up your password
+                </h1>
+                <p className="text-muted-foreground">
+                  Create a password to secure your account and make future logins easier.
+                </p>
+              </div>
+
+              <form onSubmit={handlePasswordSetup} className="space-y-4">
+                {/* Password Input */}
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="New password (min 8 characters)"
+                    value={passwordValue}
+                    onChange={(e) => setPasswordValue(e.target.value)}
+                    className={cn(
+                      "w-full pl-12 pr-12 py-3.5 rounded-xl",
+                      "bg-secondary/30 border border-border/50",
+                      "text-foreground placeholder:text-muted-foreground/50",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                      "transition-all duration-300"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {/* Confirm Password Input */}
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={cn(
+                      "w-full pl-12 pr-12 py-3.5 rounded-xl",
+                      "bg-secondary/30 border border-border/50",
+                      "text-foreground placeholder:text-muted-foreground/50",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                      "transition-all duration-300"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="xl"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="animate-pulse">Setting up...</span>
+                  ) : (
+                    <>
+                      Complete Setup
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </div>
+          ) : step === "magic-link-sent" ? (
+            // Magic Link Sent Step
             <div className="text-center opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-                <Mail className="w-8 h-8 text-primary" />
+                <CheckCircle className="w-8 h-8 text-primary" />
               </div>
               <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
-                Enter verification code
+                Check your email
               </h1>
-              <p className="text-muted-foreground mb-8">
-                We sent a 6-digit code to <span className="text-foreground font-medium">{email}</span>
+              <p className="text-muted-foreground mb-6">
+                We sent a magic link to <span className="text-foreground font-medium">{email}</span>
               </p>
-
-              <div className="flex justify-center mb-6">
-                <InputOTP
-                  value={otpValue}
-                  onChange={setOtpValue}
-                  maxLength={6}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm mb-4">
-                  {error}
-                </div>
-              )}
-
-              <Button
-                onClick={handleVerifyOtp}
-                variant="hero"
-                size="xl"
-                className="w-full mb-4"
-                disabled={isSubmitting || otpValue.length !== 6}
-              >
-                {isSubmitting ? (
-                  <span className="animate-pulse">Verifying...</span>
-                ) : (
-                  <>
-                    Verify & Continue
-                    <ArrowRight size={20} />
-                  </>
-                )}
-              </Button>
+              <p className="text-sm text-muted-foreground mb-8">
+                Click the link in the email to sign in. After signing in, you'll be prompted to set up a password for future logins.
+              </p>
 
               <div className="flex items-center justify-center gap-4 text-sm">
                 <button
                   onClick={() => {
                     setStep("form");
-                    setOtpValue("");
                     setError("");
                   }}
                   className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
@@ -217,11 +281,18 @@ const Auth = () => {
                 </button>
                 <span className="text-muted-foreground/50">|</span>
                 <button
-                  onClick={handleResendOtp}
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    const { error } = await sendOtp(email);
+                    setIsSubmitting(false);
+                    if (error) {
+                      setError(error.message);
+                    }
+                  }}
                   disabled={isSubmitting}
                   className="text-primary hover:underline"
                 >
-                  Resend code
+                  Resend email
                 </button>
               </div>
             </div>
@@ -238,10 +309,10 @@ const Auth = () => {
                 </p>
               </div>
 
-              <form
+              <form 
                 onSubmit={handleSubmit} 
                 className="space-y-4 opacity-0 animate-fade-up" 
-                style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
+                style={{ animationDelay: "150ms", animationFillMode: "forwards" }}
               >
                 {/* Email Input */}
                 <div className="relative">
@@ -268,8 +339,8 @@ const Auth = () => {
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={passwordValue}
+                      onChange={(e) => setPasswordValue(e.target.value)}
                       className={cn(
                         "w-full pl-12 pr-12 py-3.5 rounded-xl",
                         "bg-secondary/30 border border-border/50",
@@ -305,7 +376,7 @@ const Auth = () => {
                 >
                   {isSubmitting ? (
                     <span className="animate-pulse">
-                      {isLogin ? "Signing in..." : "Sending code..."}
+                      {isLogin ? "Signing in..." : "Sending link..."}
                     </span>
                   ) : (
                     <>
@@ -317,13 +388,14 @@ const Auth = () => {
               </form>
 
               {/* Toggle Login/Signup */}
-              <div className="text-center mt-6 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
+              <div className="text-center mt-6 opacity-0 animate-fade-up" style={{ animationDelay: "200ms", animationFillMode: "forwards" }}>
                 <p className="text-muted-foreground text-sm">
                   {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                   <button
                     onClick={() => {
                       setIsLogin(!isLogin);
                       setError("");
+                      setPasswordValue("");
                     }}
                     className="text-primary hover:underline font-medium"
                   >
