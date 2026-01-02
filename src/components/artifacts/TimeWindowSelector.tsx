@@ -10,8 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CalendarRange, FileText, Check } from "lucide-react";
-import { format, parseISO, startOfQuarter, endOfQuarter, differenceInQuarters, addQuarters } from "date-fns";
+import { format, parseISO, startOfQuarter, endOfQuarter, addQuarters, isBefore, isAfter, isSameQuarter } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface QuarterRecord {
@@ -29,9 +36,15 @@ interface TimeWindowSelectorProps {
   onRangeChange: (range: [Date, Date]) => void;
 }
 
+interface QuarterOption {
+  value: string;
+  label: string;
+  date: Date;
+  isToday?: boolean;
+}
+
 export const TimeWindowSelector = ({
   roleStartDate,
-  roleEndDate,
   quarterRecords,
   selectedRange,
   onRangeChange,
@@ -39,63 +52,165 @@ export const TimeWindowSelector = ({
   const [isOpen, setIsOpen] = useState(false);
   const [localRange, setLocalRange] = useState<[number, number]>([0, 100]);
 
-  // Calculate the full timeline based on role dates
-  const timeline = useMemo(() => {
-    const start = roleStartDate || new Date(2020, 0, 1);
-    const end = roleEndDate || new Date();
-    const startQ = startOfQuarter(start);
-    const endQ = endOfQuarter(end);
-    const totalQuarters = differenceInQuarters(endQ, startQ) + 1;
-    
-    return {
-      start: startQ,
-      end: endQ,
-      totalQuarters: Math.max(totalQuarters, 1),
-    };
-  }, [roleStartDate, roleEndDate]);
+  // Min is role start date, max is today
+  const today = new Date();
+  const minDate = roleStartDate || new Date(2020, 0, 1);
+  const maxDate = today;
 
-  // Convert slider values to dates
-  const sliderToDate = (value: number): Date => {
-    const quarterIndex = Math.round((value / 100) * (timeline.totalQuarters - 1));
-    return addQuarters(timeline.start, quarterIndex);
+  // Generate quarterly options from role start to today
+  const quarterOptions = useMemo(() => {
+    const options: QuarterOption[] = [];
+    const startQ = startOfQuarter(minDate);
+    const endQ = startOfQuarter(maxDate);
+    
+    let current = startQ;
+    let index = 0;
+    
+    while (isBefore(current, endQ) || isSameQuarter(current, endQ)) {
+      const quarterNum = Math.ceil((current.getMonth() + 1) / 3);
+      options.push({
+        value: index.toString(),
+        label: `Q${quarterNum} ${current.getFullYear()}`,
+        date: current,
+      });
+      current = addQuarters(current, 1);
+      index++;
+    }
+    
+    // Add "Today" option at the end
+    options.push({
+      value: "today",
+      label: `Today (${format(today, "MMM d, yyyy")})`,
+      date: today,
+      isToday: true,
+    });
+    
+    return options;
+  }, [minDate, maxDate]);
+
+  // Get just quarterly options (without today) for slider steps
+  const quarterlySteps = useMemo(() => 
+    quarterOptions.filter(o => !o.isToday),
+  [quarterOptions]);
+
+  // Timeline for slider
+  const timeline = useMemo(() => ({
+    start: startOfQuarter(minDate),
+    end: today,
+    totalQuarters: quarterlySteps.length,
+  }), [minDate, quarterlySteps.length]);
+
+  // Convert slider value to quarter index
+  const sliderToQuarterIndex = (value: number): number => {
+    const maxIndex = timeline.totalQuarters - 1;
+    return Math.round((value / 100) * maxIndex);
   };
 
-  // Convert dates to slider values
-  const dateToSlider = (date: Date): number => {
-    const quarterIndex = differenceInQuarters(startOfQuarter(date), timeline.start);
-    return Math.max(0, Math.min(100, (quarterIndex / Math.max(timeline.totalQuarters - 1, 1)) * 100));
+  // Convert quarter index to slider value
+  const quarterIndexToSlider = (index: number): number => {
+    const maxIndex = Math.max(timeline.totalQuarters - 1, 1);
+    return (index / maxIndex) * 100;
+  };
+
+  // Convert date to quarter index
+  const dateToQuarterIndex = (date: Date): number => {
+    const startQ = startOfQuarter(minDate);
+    const targetQ = startOfQuarter(date);
+    let index = 0;
+    let current = startQ;
+    
+    while (isBefore(current, targetQ) && index < quarterlySteps.length - 1) {
+      current = addQuarters(current, 1);
+      index++;
+    }
+    
+    return index;
+  };
+
+  // Get date from quarter index
+  const quarterIndexToDate = (index: number): Date => {
+    return quarterlySteps[Math.min(index, quarterlySteps.length - 1)]?.date || timeline.start;
   };
 
   // Initialize local range from selected range
   useEffect(() => {
     if (isOpen) {
+      const startIdx = dateToQuarterIndex(selectedRange[0]);
+      const endIdx = dateToQuarterIndex(selectedRange[1]);
       setLocalRange([
-        dateToSlider(selectedRange[0]),
-        dateToSlider(selectedRange[1]),
+        quarterIndexToSlider(startIdx),
+        quarterIndexToSlider(endIdx),
       ]);
     }
   }, [isOpen, selectedRange, timeline]);
 
+  // Current dropdown values
+  const startQuarterIndex = sliderToQuarterIndex(localRange[0]);
+  const endQuarterIndex = sliderToQuarterIndex(localRange[1]);
+
+  // Dropdown options filtered by position
+  const startOptions = useMemo(() => 
+    quarterOptions.filter((_, i) => i <= endQuarterIndex || quarterOptions[i]?.isToday === false),
+  [quarterOptions, endQuarterIndex]);
+
+  const endOptions = useMemo(() => 
+    quarterOptions.filter((o, i) => i >= startQuarterIndex || o.isToday),
+  [quarterOptions, startQuarterIndex]);
+
   // Get quarters within the current local range
   const quartersInRange = useMemo(() => {
-    const startDate = sliderToDate(localRange[0]);
-    const endDate = endOfQuarter(sliderToDate(localRange[1]));
+    const startDate = quarterIndexToDate(startQuarterIndex);
+    const endDate = endQuarterIndex === quarterlySteps.length - 1 || localRange[1] === 100
+      ? today
+      : endOfQuarter(quarterIndexToDate(endQuarterIndex));
     
     return quarterRecords.filter(q => {
       const qStart = parseISO(q.quarter_start_date);
-      return qStart >= startOfQuarter(startDate) && qStart <= startOfQuarter(endDate);
+      return (isAfter(qStart, startOfQuarter(startDate)) || isSameQuarter(qStart, startDate)) && 
+             (isBefore(qStart, endDate) || isSameQuarter(qStart, startOfQuarter(endDate)));
     });
-  }, [localRange, quarterRecords, timeline]);
+  }, [startQuarterIndex, endQuarterIndex, quarterRecords, quarterlySteps, localRange]);
 
   // Count total patterns in range
   const totalPatterns = quartersInRange.reduce((sum, q) => sum + q.pattern_count, 0);
 
   const handleSliderChange = (values: number[]) => {
-    setLocalRange([values[0], values[1]]);
+    // Ensure left <= right
+    const newStart = Math.min(values[0], values[1]);
+    const newEnd = Math.max(values[0], values[1]);
+    setLocalRange([newStart, newEnd]);
+  };
+
+  const handleStartChange = (value: string) => {
+    if (value === "today") return; // Today can only be end
+    const idx = parseInt(value);
+    // Ensure start <= end
+    const newEndIdx = Math.max(idx, endQuarterIndex);
+    setLocalRange([
+      quarterIndexToSlider(idx),
+      quarterIndexToSlider(newEndIdx),
+    ]);
+  };
+
+  const handleEndChange = (value: string) => {
+    if (value === "today") {
+      // Set to max slider value
+      setLocalRange([localRange[0], 100]);
+      return;
+    }
+    const idx = parseInt(value);
+    // Ensure start <= end
+    const newStartIdx = Math.min(idx, startQuarterIndex);
+    setLocalRange([
+      quarterIndexToSlider(newStartIdx),
+      quarterIndexToSlider(idx),
+    ]);
   };
 
   const handleApply = () => {
-    onRangeChange([sliderToDate(localRange[0]), endOfQuarter(sliderToDate(localRange[1]))]);
+    const startDate = quarterIndexToDate(startQuarterIndex);
+    const endDate = localRange[1] >= 99 ? today : endOfQuarter(quarterIndexToDate(endQuarterIndex));
+    onRangeChange([startOfQuarter(startDate), endDate]);
     setIsOpen(false);
   };
 
@@ -105,8 +220,20 @@ export const TimeWindowSelector = ({
   // Count quarters in selected range
   const selectedQuarterCount = quarterRecords.filter(q => {
     const qStart = parseISO(q.quarter_start_date);
-    return qStart >= startOfQuarter(selectedRange[0]) && qStart <= startOfQuarter(selectedRange[1]);
+    return (isAfter(qStart, startOfQuarter(selectedRange[0])) || isSameQuarter(qStart, selectedRange[0])) && 
+           (isBefore(qStart, selectedRange[1]) || isSameQuarter(qStart, startOfQuarter(selectedRange[1])));
   }).length;
+
+  // Get current dropdown display values
+  const getStartDisplayValue = () => {
+    const opt = quarterlySteps[startQuarterIndex];
+    return opt ? startQuarterIndex.toString() : "0";
+  };
+
+  const getEndDisplayValue = () => {
+    if (localRange[1] >= 99) return "today";
+    return endQuarterIndex.toString();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -136,7 +263,7 @@ export const TimeWindowSelector = ({
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground px-1">
               <span>{format(timeline.start, "MMM yyyy")}</span>
-              <span>{format(timeline.end, "MMM yyyy")}</span>
+              <span>Today</span>
             </div>
             
             {/* Dual Range Slider */}
@@ -146,20 +273,51 @@ export const TimeWindowSelector = ({
                 onValueChange={handleSliderChange}
                 min={0}
                 max={100}
-                step={100 / Math.max(timeline.totalQuarters - 1, 1)}
+                step={timeline.totalQuarters > 1 ? 100 / (timeline.totalQuarters - 1) : 100}
                 className="cursor-pointer"
               />
             </div>
             
-            {/* Selected Range Display */}
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <Badge variant="secondary" className="text-sm font-medium">
-                {format(sliderToDate(localRange[0]), "MMM yyyy")}
-              </Badge>
-              <span className="text-muted-foreground">to</span>
-              <Badge variant="secondary" className="text-sm font-medium">
-                {format(endOfQuarter(sliderToDate(localRange[1])), "MMM yyyy")}
-              </Badge>
+            {/* Selected Range Dropdowns */}
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Select value={getStartDisplayValue()} onValueChange={handleStartChange}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {quarterlySteps.map((opt, idx) => (
+                    <SelectItem 
+                      key={opt.value} 
+                      value={idx.toString()}
+                      disabled={idx > endQuarterIndex}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <span className="text-muted-foreground text-sm">to</span>
+              
+              <Select value={getEndDisplayValue()} onValueChange={handleEndChange}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {quarterlySteps.map((opt, idx) => (
+                    <SelectItem 
+                      key={opt.value} 
+                      value={idx.toString()}
+                      disabled={idx < startQuarterIndex}
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="today">
+                    Today ({format(today, "MMM d")})
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -216,8 +374,12 @@ export const TimeWindowSelector = ({
           </div>
 
           {/* Apply Button */}
-          <Button onClick={handleApply} className="w-full">
-            Apply Selection
+          <Button 
+            onClick={handleApply} 
+            className="w-full"
+            disabled={quartersInRange.length === 0}
+          >
+            {quartersInRange.length === 0 ? "No Quarters to Include" : "Apply Selection"}
           </Button>
         </div>
       </DialogContent>
