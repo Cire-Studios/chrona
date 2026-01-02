@@ -408,6 +408,229 @@ export type Database = {
         }
         Relationships: []
       }
+      resume_bullets: {
+        Row: {
+          bullet_text: string
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean
+          resume_id: string
+          role_id: string
+          source_pattern_id: string | null
+          user_id: string
+        }
+        Insert: {
+          bullet_text: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          resume_id: string
+          role_id: string
+          source_pattern_id?: string | null
+          user_id: string
+        }
+        Update: {
+          bullet_text?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          resume_id?: string
+          role_id?: string
+          source_pattern_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_bullets_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_bullets_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_bullets_source_pattern_id_fkey"
+            columns: ["source_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "quarterly_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resume_proofs: {
+        Row: {
+          created_at: string
+          display_context: string | null
+          entry_id: string | null
+          entry_image_id: string | null
+          id: string
+          is_approved: boolean
+          proof_link_id: string | null
+          resume_id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_context?: string | null
+          entry_id?: string | null
+          entry_image_id?: string | null
+          id?: string
+          is_approved?: boolean
+          proof_link_id?: string | null
+          resume_id: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_context?: string | null
+          entry_id?: string | null
+          entry_image_id?: string | null
+          id?: string
+          is_approved?: boolean
+          proof_link_id?: string | null
+          resume_id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_proofs_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_proofs_entry_image_id_fkey"
+            columns: ["entry_image_id"]
+            isOneToOne: false
+            referencedRelation: "entry_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_proofs_proof_link_id_fkey"
+            columns: ["proof_link_id"]
+            isOneToOne: false
+            referencedRelation: "proof_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_proofs_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_proofs_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resume_roles: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          include_company: boolean
+          include_dates: boolean
+          resume_id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          include_company?: boolean
+          include_dates?: boolean
+          resume_id: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          include_company?: boolean
+          include_dates?: boolean
+          resume_id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_roles_resume_id_fkey"
+            columns: ["resume_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resume_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resumes: {
+        Row: {
+          contact_email: string | null
+          contact_linkedin: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          is_public: boolean
+          public_slug: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_linkedin?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          public_slug?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_linkedin?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          public_slug?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       roles: {
         Row: {
           color: string | null

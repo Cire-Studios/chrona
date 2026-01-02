@@ -24,6 +24,9 @@ import About from "./pages/About";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
+import Resumes from "./pages/Resumes";
+import ResumeBuilder from "./pages/ResumeBuilder";
+import PublicResume from "./pages/PublicResume";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +61,12 @@ const App = () => (
                 <Route path="/roles" element={<PasswordSetupGate><Roles /></PasswordSetupGate>} />
                 <Route path="/timeline" element={<PasswordSetupGate><Timeline /></PasswordSetupGate>} />
                 <Route path="/settings" element={<PasswordSetupGate><Settings /></PasswordSetupGate>} />
+                <Route path="/resumes" element={<PasswordSetupGate><Resumes /></PasswordSetupGate>} />
+                <Route path="/resume/new" element={<PasswordSetupGate><ResumeBuilder /></PasswordSetupGate>} />
+                <Route path="/resume/:id" element={<PasswordSetupGate><ResumeBuilder /></PasswordSetupGate>} />
+                
+                {/* Public resume page - no auth required */}
+                <Route path="/r/:slug" element={<PublicResume />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { path: "/weekly", label: "Weekly", icon: Sparkles },
   { path: "/quarterly", label: "Quarterly", icon: Layers },
   { path: "/artifacts", label: "Artifacts", icon: FileText },
+  { path: "/resumes", label: "Resumes", icon: FileText },
   { path: "/timeline", label: "Timeline", icon: TrendingUp },
 ];
 
