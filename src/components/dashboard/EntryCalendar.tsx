@@ -38,7 +38,11 @@ interface DayEntries {
   };
 }
 
-export const EntryCalendar = () => {
+interface EntryCalendarProps {
+  roleIds?: string[];
+}
+
+export const EntryCalendar = ({ roleIds }: EntryCalendarProps) => {
   const { user } = useAuth();
   const { roles, setActiveRole } = useRoles();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -61,12 +65,18 @@ export const EntryCalendar = () => {
       const monthEnd = endOfMonth(currentMonth);
 
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from("journal_entries")
           .select("id, entry_date, role_id, accomplishments, decisions, challenges, learnings")
           .gte("entry_date", format(monthStart, "yyyy-MM-dd"))
-          .lte("entry_date", format(monthEnd, "yyyy-MM-dd"))
-          .order("entry_date", { ascending: true });
+          .lte("entry_date", format(monthEnd, "yyyy-MM-dd"));
+
+        // Filter by role IDs if provided
+        if (roleIds && roleIds.length > 0) {
+          query = query.in("role_id", roleIds);
+        }
+
+        const { data, error } = await query.order("entry_date", { ascending: true });
 
         if (error) throw error;
 
@@ -93,7 +103,7 @@ export const EntryCalendar = () => {
     };
 
     fetchMonthEntries();
-  }, [user, currentMonth, roleColorMap]);
+  }, [user, currentMonth, roleColorMap, roleIds]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
