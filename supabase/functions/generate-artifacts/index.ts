@@ -10,13 +10,17 @@ interface Pattern {
   title: string;
   description: string;
   signal_count: number;
+  quarter?: string;
 }
+
+type ArtifactType = "resume" | "self-review" | "star";
 
 interface ArtifactRequest {
   patterns: Pattern[];
   roleTitle: string;
   company?: string;
-  quarterLabel: string;
+  dateRange: string;
+  artifactType: ArtifactType;
 }
 
 serve(async (req) => {
@@ -26,11 +30,18 @@ serve(async (req) => {
   }
 
   try {
-    const { patterns, roleTitle, company, quarterLabel }: ArtifactRequest = await req.json();
+    const { patterns, roleTitle, company, dateRange, artifactType }: ArtifactRequest = await req.json();
 
     if (!patterns || patterns.length === 0) {
       return new Response(
         JSON.stringify({ error: "No confirmed patterns provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!artifactType) {
+      return new Response(
+        JSON.stringify({ error: "Artifact type not specified" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -46,7 +57,7 @@ serve(async (req) => {
 
     // Format patterns for the prompt
     const patternsSummary = patterns.map((p, i) => 
-      `${i + 1}. [${p.category.toUpperCase()}] ${p.title}\n   ${p.description}\n   (Supported by ${p.signal_count} signals)`
+      `${i + 1}. [${p.category.toUpperCase()}]${p.quarter ? ` (${p.quarter})` : ""} ${p.title}\n   ${p.description}\n   (Supported by ${p.signal_count} signals)`
     ).join("\n\n");
 
     const roleContext = company ? `${roleTitle} at ${company}` : roleTitle;
@@ -55,35 +66,78 @@ serve(async (req) => {
 
 Your task is to transform career patterns into polished professional artifacts. Be specific, quantify impact where possible, and use strong action verbs.`;
 
-    const userPrompt = `Based on the following confirmed career patterns from ${quarterLabel} for a ${roleContext}, generate three types of career artifacts:
+    let userPrompt: string;
+    let expectedFormat: string;
+
+    switch (artifactType) {
+      case "resume":
+        userPrompt = `Based on the following confirmed career patterns from ${dateRange} for a ${roleContext}, generate resume bullets.
 
 PATTERNS:
 ${patternsSummary}
 
-Generate the following artifacts in JSON format:
-
-1. **Resume Bullets**: 4-6 concise, impactful bullet points suitable for a resume. Each should start with a strong action verb and quantify impact where possible. Format: achievement-focused, past tense.
-
-2. **Self-Review Draft**: 2-3 paragraphs summarizing key accomplishments for a performance self-review. Include specific examples, demonstrate growth, and highlight impact. Write in first person.
-
-3. **STAR Stories**: 2-3 complete STAR (Situation, Task, Action, Result) stories that could be used in behavioral interviews. Each story should clearly demonstrate a valuable competency.
+Generate 5-8 concise, impactful bullet points suitable for a resume. Each should:
+- Start with a strong action verb
+- Quantify impact where possible
+- Be achievement-focused and in past tense
+- Synthesize patterns across the time period to show sustained impact
 
 Return your response as valid JSON with this exact structure:
 {
-  "resumeBullets": ["bullet1", "bullet2", ...],
-  "selfReview": "Full self-review text here...",
+  "resumeBullets": ["bullet1", "bullet2", ...]
+}`;
+        expectedFormat = "resumeBullets";
+        break;
+
+      case "self-review":
+        userPrompt = `Based on the following confirmed career patterns from ${dateRange} for a ${roleContext}, generate a self-review draft.
+
+PATTERNS:
+${patternsSummary}
+
+Generate 3-4 paragraphs summarizing key accomplishments for a performance self-review. The review should:
+- Include specific examples from the patterns
+- Demonstrate growth and development over the period
+- Highlight impact and contributions
+- Be written in first person
+- Synthesize themes across quarters to show consistent excellence
+
+Return your response as valid JSON with this exact structure:
+{
+  "selfReview": "Full self-review text here with multiple paragraphs..."
+}`;
+        expectedFormat = "selfReview";
+        break;
+
+      case "star":
+        userPrompt = `Based on the following confirmed career patterns from ${dateRange} for a ${roleContext}, generate STAR stories for behavioral interviews.
+
+PATTERNS:
+${patternsSummary}
+
+Generate 3-4 complete STAR (Situation, Task, Action, Result) stories. Each story should:
+- Clearly demonstrate a valuable competency
+- Be detailed enough for a 2-3 minute interview answer
+- Show quantifiable results where possible
+- Draw from patterns that show the strongest evidence
+
+Return your response as valid JSON with this exact structure:
+{
   "starStories": [
     {
-      "title": "Story title describing the competency",
-      "situation": "Context and background",
-      "task": "What was required",
-      "action": "What you did specifically",
-      "result": "The outcome and impact"
+      "title": "Story title describing the competency demonstrated",
+      "situation": "Context and background - what was the challenge or opportunity",
+      "task": "What was your specific responsibility or goal",
+      "action": "What you did specifically - the steps you took",
+      "result": "The outcome and impact - quantify if possible"
     }
   ]
 }`;
+        expectedFormat = "starStories";
+        break;
+    }
 
-    console.log(`Generating artifacts for ${roleContext} - ${quarterLabel} with ${patterns.length} patterns`);
+    console.log(`Generating ${artifactType} artifact for ${roleContext} - ${dateRange} with ${patterns.length} patterns`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -118,7 +172,7 @@ Return your response as valid JSON with this exact structure:
       }
       
       return new Response(
-        JSON.stringify({ error: "Failed to generate artifacts" }),
+        JSON.stringify({ error: "Failed to generate artifact" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -129,32 +183,32 @@ Return your response as valid JSON with this exact structure:
     if (!content) {
       console.error("No content in AI response");
       return new Response(
-        JSON.stringify({ error: "No artifacts generated" }),
+        JSON.stringify({ error: "No artifact generated" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Parse the JSON response
-    let artifacts;
+    let artifact;
     try {
       // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        artifacts = JSON.parse(jsonMatch[0]);
+        artifact = JSON.parse(jsonMatch[0]);
       } else {
         throw new Error("No JSON found in response");
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError, content);
       return new Response(
-        JSON.stringify({ error: "Failed to parse generated artifacts" }),
+        JSON.stringify({ error: "Failed to parse generated artifact" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Successfully generated artifacts");
+    console.log(`Successfully generated ${artifactType} artifact`);
 
-    return new Response(JSON.stringify({ artifacts }), {
+    return new Response(JSON.stringify({ artifact }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
