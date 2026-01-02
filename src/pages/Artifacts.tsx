@@ -74,9 +74,9 @@ const Artifacts = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
-  // Get role dates
-  const roleStartDate = activeRole?.start_date ? parseISO(activeRole.start_date) : null;
-  const roleEndDate = activeRole?.end_date ? parseISO(activeRole.end_date) : new Date();
+  // Get role dates - use created_at as the minimum date for the role's lifespan
+  const roleStartDate = activeRole?.created_at ? parseISO(activeRole.created_at) : null;
+  const roleEndDate = new Date(); // Always use today as max
 
   // Initialize range based on role dates
   useEffect(() => {

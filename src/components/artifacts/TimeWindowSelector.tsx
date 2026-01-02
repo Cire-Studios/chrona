@@ -52,9 +52,9 @@ export const TimeWindowSelector = ({
   const [isOpen, setIsOpen] = useState(false);
   const [localRange, setLocalRange] = useState<[number, number]>([0, 100]);
 
-  // Min is role start date, max is today
+  // Min is role start date, max is today - roleStartDate should always be provided
   const today = new Date();
-  const minDate = roleStartDate || new Date(2020, 0, 1);
+  const minDate = roleStartDate || today; // Fallback to today if somehow null
   const maxDate = today;
 
   // Generate quarterly options from role start to today
