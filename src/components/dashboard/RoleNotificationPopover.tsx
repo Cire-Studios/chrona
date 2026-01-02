@@ -122,7 +122,6 @@ export const RoleNotificationPopover = ({ roleId, userId }: RoleNotificationPopo
         <button
           className="p-1.5 rounded-full bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/80"
           onClick={(e) => {
-            e.preventDefault();
             e.stopPropagation();
           }}
         >
