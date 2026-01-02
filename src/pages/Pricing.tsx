@@ -156,7 +156,7 @@ const Pricing = () => {
 
         {/* FAQ or additional info */}
         <div className="text-center mt-16 text-muted-foreground">
-          <p>Questions? <Link to="/contact" className="text-primary hover:underline">Contact us</Link></p>
+          <p>Questions? <a href="https://cire-studios.moxieapp.com/public/new-form" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Contact us</a></p>
         </div>
       </div>
 
