@@ -64,7 +64,7 @@ const Artifacts = () => {
   
   const [selectedRange, setSelectedRange] = useState<[Date, Date]>(() => {
     const now = new Date();
-    return [startOfQuarter(new Date(now.getFullYear() - 1, 0, 1)), endOfQuarter(now)];
+    return [startOfQuarter(new Date(now.getFullYear() - 1, 0, 1)), now];
   });
   const [quarterRecords, setQuarterRecords] = useState<QuarterRecord[]>([]);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
@@ -82,8 +82,7 @@ const Artifacts = () => {
   useEffect(() => {
     if (activeRole) {
       const start = roleStartDate || new Date(new Date().getFullYear() - 1, 0, 1);
-      const end = roleEndDate || new Date();
-      setSelectedRange([startOfQuarter(start), endOfQuarter(end)]);
+      setSelectedRange([startOfQuarter(start), new Date()]);
     }
   }, [activeRole?.id]);
 
