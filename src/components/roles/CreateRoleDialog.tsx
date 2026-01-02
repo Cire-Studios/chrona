@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRoles } from "@/contexts/RolesContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Crown } from "lucide-react";
 
 const roleColors = [
   "#f59e0b", // amber
@@ -29,11 +30,64 @@ interface CreateRoleDialogProps {
 
 export const CreateRoleDialog = ({ open, onOpenChange }: CreateRoleDialogProps) => {
   const { createRole } = useRoles();
+  const { canCreateRole, tier, openCheckout } = useSubscription();
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(roleColors[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Show upgrade prompt if Starter tier can't create more roles
+  if (!canCreateRole && tier === "starter") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl flex items-center gap-2">
+              <Crown className="h-6 w-6 text-amber-500" />
+              Upgrade to Chronicler
+            </DialogTitle>
+            <DialogDescription>
+              Starter tier includes 1 role. Upgrade to Chronicler for unlimited roles.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="p-4 bg-secondary/30 rounded-xl space-y-2">
+              <p className="font-medium">Chronicler includes:</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Unlimited career roles</li>
+                <li>• 50 AI artifact generations per month</li>
+                <li>• Image uploads in journal entries</li>
+              </ul>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="hero"
+                onClick={() => openCheckout("month")}
+                className="flex-1"
+              >
+                $7/month
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => openCheckout("year")}
+                className="flex-1"
+              >
+                $72/year
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

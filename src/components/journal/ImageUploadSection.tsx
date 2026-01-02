@@ -1,8 +1,9 @@
 import { useRef } from "react";
-import { ImagePlus, X, Image as ImageIcon } from "lucide-react";
+import { ImagePlus, X, Image as ImageIcon, Crown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import type { ImageFileData } from "@/pages/Journal";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -20,6 +21,7 @@ export const ImageUploadSection = ({
 }: ImageUploadSectionProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { canUploadImages, tier, openCheckout } = useSubscription();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -87,6 +89,39 @@ export const ImageUploadSection = ({
   };
 
   const canAddMore = images.length < maxImages;
+
+  // Show upgrade prompt for Starter tier
+  if (!canUploadImages) {
+    return (
+      <div className="p-5 rounded-2xl bg-gradient-card border border-border/50">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-serif text-lg font-semibold flex items-center gap-2">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              Screenshots & Evidence
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Upgrade to Chronicler to upload images
+            </p>
+          </div>
+        </div>
+        <div className="p-6 rounded-xl border-2 border-dashed border-border/50 bg-secondary/10 text-center">
+          <Crown className="mx-auto h-8 w-8 text-amber-500 mb-3" />
+          <p className="text-sm text-muted-foreground mb-4">
+            Image uploads are available with Chronicler tier
+          </p>
+          <div className="flex justify-center gap-2">
+            <Button size="sm" variant="hero" onClick={() => openCheckout("month")}>
+              $7/month
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => openCheckout("year")}>
+              $72/year
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-5 rounded-2xl bg-gradient-card border border-border/50">
