@@ -43,9 +43,11 @@ export const RoleStatsCard = ({ stats, userId, onClick }: RoleStatsCardProps) =>
       className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/30 bg-card/50 backdrop-blur-sm relative overflow-hidden"
       onClick={onClick}
     >
-      {/* Notification Icon */}
+      {/* Notification Icon - Top Right */}
       {userId && (
-        <RoleNotificationPopover roleId={role.id} userId={userId} />
+        <div className="absolute top-3 right-3 z-10">
+          <RoleNotificationPopover roleId={role.id} userId={userId} />
+        </div>
       )}
 
       <CardContent className="p-6">

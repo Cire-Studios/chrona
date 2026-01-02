@@ -120,13 +120,13 @@ export const RoleNotificationPopover = ({ roleId, userId }: RoleNotificationPopo
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`absolute top-3 right-3 p-1.5 rounded-full transition-colors hover:bg-secondary/50 ${urgencyColors[highestUrgency]}`}
+          className="p-1.5 rounded-full bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/80"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
-          <Bell size={16} className="animate-pulse" />
+          <Bell size={14} className="animate-pulse" />
         </button>
       </PopoverTrigger>
       <PopoverContent 
