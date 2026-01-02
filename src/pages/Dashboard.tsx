@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Logo } from "@/components/Logo";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { RoleStatsCard } from "@/components/dashboard/RoleStatsCard";
 import { SignalTrendsChart } from "@/components/dashboard/SignalTrendsChart";
@@ -9,13 +9,7 @@ import { PatternBreakdown } from "@/components/dashboard/PatternBreakdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoles, Role } from "@/contexts/RolesContext";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  LogOut, 
-  PenLine, 
-  Sparkles, 
-  Layers,
-  LayoutDashboard 
-} from "lucide-react";
+import { PenLine, LayoutDashboard } from "lucide-react";
 import { format, startOfWeek, subWeeks } from "date-fns";
 
 interface RoleStats {
@@ -51,7 +45,7 @@ interface PatternData {
 }
 
 const Dashboard = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { roles, loading: rolesLoading, setActiveRole } = useRoles();
   const [roleStats, setRoleStats] = useState<RoleStats[]>([]);
   const [signalTrends, setSignalTrends] = useState<SignalTrend[]>([]);
@@ -243,42 +237,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Logo size="sm" />
-            <div className="hidden sm:flex items-center gap-1 text-muted-foreground">
-              <LayoutDashboard size={16} />
-              <span className="text-sm font-medium">Dashboard</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link to="/journal">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <PenLine size={16} />
-                <span className="hidden sm:inline">Journal</span>
-              </Button>
-            </Link>
-            <Link to="/weekly">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <Sparkles size={16} />
-                <span className="hidden sm:inline">Weekly</span>
-              </Button>
-            </Link>
-            <Link to="/quarterly">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <Layers size={16} />
-                <span className="hidden sm:inline">Quarterly</span>
-              </Button>
-            </Link>
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut size={18} />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader showRoleSelector={false} />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-8">
