@@ -212,13 +212,12 @@ const Dashboard = () => {
               <h2 className="text-lg font-semibold mb-4">Your Roles</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {roleStats.map((stats) => (
-                  <Link 
+                  <RoleStatsCard 
                     key={stats.role.id} 
-                    to="/journal"
+                    stats={stats} 
+                    userId={user?.id}
                     onClick={() => handleRoleClick(stats.role)}
-                  >
-                    <RoleStatsCard stats={stats} userId={user?.id} />
-                  </Link>
+                  />
                 ))}
               </div>
             </section>

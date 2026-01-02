@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Role } from "@/contexts/RolesContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ interface RoleStatsCardProps {
 }
 
 export const RoleStatsCard = ({ stats, userId, onClick }: RoleStatsCardProps) => {
+  const navigate = useNavigate();
   const { role, entryCount, signalCount, patternCount, lastEntryDate } = stats;
 
   const formatDate = (dateStr: string | null) => {
@@ -38,10 +39,15 @@ export const RoleStatsCard = ({ stats, userId, onClick }: RoleStatsCardProps) =>
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const hasEntryToday = lastEntryDate === todayStr;
 
+  const handleCardClick = () => {
+    onClick?.();
+    navigate("/journal");
+  };
+
   return (
     <Card 
       className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/30 bg-card/50 backdrop-blur-sm relative overflow-hidden"
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {/* Notification Icon - Top Right */}
       {userId && (
