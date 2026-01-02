@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { RoleStatsCard } from "@/components/dashboard/RoleStatsCard";
 import { SignalTrendsChart } from "@/components/dashboard/SignalTrendsChart";
-import { RecentActivityList } from "@/components/dashboard/RecentActivityList";
+import { EntryCalendar } from "@/components/dashboard/EntryCalendar";
 import { PatternBreakdown } from "@/components/dashboard/PatternBreakdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoles, Role } from "@/contexts/RolesContext";
@@ -28,16 +28,6 @@ interface SignalTrend {
   learning: number;
 }
 
-interface ActivityItem {
-  id: string;
-  type: "entry" | "signal" | "pattern" | "quarter";
-  title: string;
-  description: string;
-  roleColor: string;
-  roleName: string;
-  createdAt: string;
-}
-
 interface PatternData {
   category: string;
   count: number;
@@ -49,7 +39,6 @@ const Dashboard = () => {
   const { roles, loading: rolesLoading, setActiveRole } = useRoles();
   const [roleStats, setRoleStats] = useState<RoleStats[]>([]);
   const [signalTrends, setSignalTrends] = useState<SignalTrend[]>([]);
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [patternData, setPatternData] = useState<PatternData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -126,59 +115,6 @@ const Dashboard = () => {
           weeks.push({ week: weekLabel, ...counts });
         }
         setSignalTrends(weeks);
-
-        // Fetch recent activity
-        const activities: ActivityItem[] = [];
-        const roleMap = new Map(roles.map(r => [r.id, r]));
-
-        // Recent entries
-        const { data: recentEntries } = await supabase
-          .from("journal_entries")
-          .select("id, entry_date, accomplishments, role_id, created_at")
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        recentEntries?.forEach((entry) => {
-          const role = roleMap.get(entry.role_id);
-          if (role) {
-            activities.push({
-              id: `entry-${entry.id}`,
-              type: "entry",
-              title: "Journal Entry",
-              description: entry.accomplishments?.substring(0, 80) || "No accomplishments recorded",
-              roleColor: role.color,
-              roleName: role.title,
-              createdAt: entry.created_at,
-            });
-          }
-        });
-
-        // Recent confirmed patterns
-        const { data: recentPatterns } = await supabase
-          .from("quarterly_patterns")
-          .select("id, title, category, record_id, created_at, quarterly_records!inner(role_id)")
-          .eq("is_confirmed", true)
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        recentPatterns?.forEach((pattern) => {
-          const role = roleMap.get(pattern.quarterly_records.role_id);
-          if (role) {
-            activities.push({
-              id: `pattern-${pattern.id}`,
-              type: "pattern",
-              title: pattern.title,
-              description: `Confirmed ${pattern.category.replace("_", " ")} pattern`,
-              roleColor: role.color,
-              roleName: role.title,
-              createdAt: pattern.created_at,
-            });
-          }
-        });
-
-        // Sort by date and take top 10
-        activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setRecentActivity(activities.slice(0, 10));
 
         // Fetch pattern breakdown
         const { data: patterns } = await supabase
@@ -298,12 +234,12 @@ const Dashboard = () => {
               <PatternBreakdown data={patternData} />
             </div>
 
-            {/* Recent Activity */}
+            {/* Entry Calendar */}
             <section
               className="opacity-0 animate-fade-up"
               style={{ animationDelay: "400ms", animationFillMode: "forwards" }}
             >
-              <RecentActivityList activities={recentActivity} />
+              <EntryCalendar />
             </section>
           </div>
         )}
