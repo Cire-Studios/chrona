@@ -5,7 +5,7 @@ import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
 import { PastEntriesList } from "@/components/journal/PastEntriesList";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
-import { ReminderBanner } from "@/components/notifications/ReminderBanner";
+
 import { Calendar, Save, CheckCircle, History, PenLine } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -341,7 +341,6 @@ const Journal = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <StickyRoleSelector />
-      <ReminderBanner />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">

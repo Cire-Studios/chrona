@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
-import { ReminderBanner } from "@/components/notifications/ReminderBanner";
+
 import { WeekSelector } from "@/components/weekly/WeekSelector";
 import { WeeklyEntryCard } from "@/components/weekly/WeeklyEntryCard";
 import { SignalFlag, SignalFlagBadge } from "@/components/weekly/SignalFlagBadge";
@@ -323,7 +323,6 @@ const WeeklyReflection = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <StickyRoleSelector />
-      <ReminderBanner />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
