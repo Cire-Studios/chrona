@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
+import { PastEntriesList } from "@/components/journal/PastEntriesList";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { Calendar, Save, CheckCircle } from "lucide-react";
+import { Calendar, Save, CheckCircle, History, PenLine } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -339,55 +341,84 @@ const Journal = () => {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
-        {/* Date Header */}
-        <div
-          className="flex items-start justify-between mb-8 opacity-0 animate-fade-up"
-          style={{ animationDelay: "100ms", animationFillMode: "forwards" }}
-        >
-          <div>
-            <div className="flex items-center gap-3 text-muted-foreground mb-2">
-              <Calendar size={18} className="text-primary" />
-              <span className="text-sm font-medium uppercase tracking-wider">
-                Daily Capture
-              </span>
-              {activeRole && (
-                <>
-                  <span className="text-border">•</span>
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: activeRole.color }}
-                  />
-                  <span className="text-sm">{activeRole.title}</span>
-                </>
-              )}
+        <Tabs defaultValue="today" className="w-full">
+          <div className="flex items-center justify-between mb-6">
+            <TabsList className="bg-secondary/30">
+              <TabsTrigger value="today" className="gap-2">
+                <PenLine className="h-4 w-4" />
+                Today
+              </TabsTrigger>
+              <TabsTrigger value="past" className="gap-2">
+                <History className="h-4 w-4" />
+                Past Entries
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="today" className="mt-0">
+            {/* Date Header */}
+            <div
+              className="flex items-start justify-between mb-8 opacity-0 animate-fade-up"
+              style={{ animationDelay: "100ms", animationFillMode: "forwards" }}
+            >
+              <div>
+                <div className="flex items-center gap-3 text-muted-foreground mb-2">
+                  <Calendar size={18} className="text-primary" />
+                  <span className="text-sm font-medium uppercase tracking-wider">
+                    Daily Capture
+                  </span>
+                  {activeRole && (
+                    <>
+                      <span className="text-border">•</span>
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: activeRole.color }}
+                      />
+                      <span className="text-sm">{activeRole.title}</span>
+                    </>
+                  )}
+                </div>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold">{today}</h1>
+              </div>
+              {saveButton}
             </div>
-            <h1 className="font-serif text-3xl md:text-4xl font-bold">{today}</h1>
-          </div>
-          {saveButton}
-        </div>
 
-        {/* No Role Warning */}
-        {!activeRole && (
-          <div className="p-6 rounded-2xl bg-secondary/30 border border-border/50 text-center mb-8">
-            <p className="text-muted-foreground mb-4">
-              Create a role to start journaling. Roles help you organize entries
-              by different positions or jobs.
-            </p>
-          </div>
-        )}
+            {/* No Role Warning */}
+            {!activeRole && (
+              <div className="p-6 rounded-2xl bg-secondary/30 border border-border/50 text-center mb-8">
+                <p className="text-muted-foreground mb-4">
+                  Create a role to start journaling. Roles help you organize entries
+                  by different positions or jobs.
+                </p>
+              </div>
+            )}
 
-        {/* Journal Form */}
-        {activeRole && (
-          <div
-            className="opacity-0 animate-fade-up"
-            style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
-          >
-            <JournalEntryForm
-              entryData={entryData}
-              onEntryChange={setEntryData}
-            />
-          </div>
-        )}
+            {/* Journal Form */}
+            {activeRole && (
+              <div
+                className="opacity-0 animate-fade-up"
+                style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
+              >
+                <JournalEntryForm
+                  entryData={entryData}
+                  onEntryChange={setEntryData}
+                />
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past" className="mt-0">
+            <div className="mb-6">
+              <h1 className="font-serif text-2xl md:text-3xl font-bold mb-2">
+                Past Entries
+              </h1>
+              <p className="text-muted-foreground">
+                Search and filter through your journal history
+              </p>
+            </div>
+            <PastEntriesList />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
