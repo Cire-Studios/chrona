@@ -9,6 +9,7 @@ import {
   PenLine, 
   Sparkles, 
   Layers,
+  FileText,
   LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { path: "/journal", label: "Journal", icon: PenLine },
   { path: "/weekly", label: "Weekly", icon: Sparkles },
   { path: "/quarterly", label: "Quarterly", icon: Layers },
+  { path: "/artifacts", label: "Artifacts", icon: FileText },
 ];
 
 interface AppHeaderProps {
