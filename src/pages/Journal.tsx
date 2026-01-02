@@ -383,6 +383,9 @@ const Journal = () => {
                   Create a role to start journaling. Roles help you organize entries
                   by different positions or jobs.
                 </p>
+                <Button asChild>
+                  <Link to="/roles">Create Your First Role</Link>
+                </Button>
               </div>
             )}
 
