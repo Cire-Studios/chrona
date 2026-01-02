@@ -78,6 +78,7 @@ export const WeekSelector = ({ weekStart, onChange }: WeekSelectorProps) => {
             mode="single"
             selected={weekStart}
             onSelect={handleDateSelect}
+            defaultMonth={weekStart}
             disabled={(date) => isAfter(startOfWeek(date, { weekStartsOn: 1 }), currentWeekStart)}
             initialFocus
             className={cn("p-3 pointer-events-auto")}

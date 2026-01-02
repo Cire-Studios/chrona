@@ -84,6 +84,7 @@ export const QuarterSelector = ({ quarterStart, onChange }: QuarterSelectorProps
             mode="single"
             selected={quarterStart}
             onSelect={handleDateSelect}
+            defaultMonth={quarterStart}
             disabled={(date) => isAfter(startOfQuarter(date), currentQuarterStart)}
             initialFocus
             className={cn("p-3 pointer-events-auto")}
