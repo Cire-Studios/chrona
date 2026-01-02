@@ -46,8 +46,6 @@ const WeeklyReflection = () => {
   const [existingReflectionId, setExistingReflectionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-
   // Load entries for the selected week
   const loadWeekEntries = useCallback(async () => {
     if (!user || !activeRole) return;
@@ -55,6 +53,7 @@ const WeeklyReflection = () => {
     setIsLoading(true);
     
     try {
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
       const startDate = format(weekStart, "yyyy-MM-dd");
       const endDate = format(weekEnd, "yyyy-MM-dd");
 
@@ -117,7 +116,9 @@ const WeeklyReflection = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, activeRole, weekStart, weekEnd, toast]);
+  }, [user, activeRole, weekStart, toast]);
+
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
   useEffect(() => {
     loadWeekEntries();
