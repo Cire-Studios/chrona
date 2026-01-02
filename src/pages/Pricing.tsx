@@ -1,7 +1,7 @@
 import { Check, Sparkles, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,16 @@ import { Footer } from "@/components/Footer";
 const Pricing = () => {
   const { user } = useAuth();
   const { tier, openCheckout, loading } = useSubscription();
+  const navigate = useNavigate();
 
+  const handleUpgrade = (interval: "month" | "year") => {
+    if (!user) {
+      // Redirect to auth page if not logged in
+      navigate("/auth");
+      return;
+    }
+    openCheckout(interval);
+  };
   const plans = [
     {
       name: "Starter",
@@ -134,7 +143,7 @@ const Pricing = () => {
                     <Button
                       variant="hero"
                       className="w-full"
-                      onClick={() => openCheckout("month")}
+                      onClick={() => handleUpgrade("month")}
                       disabled={loading}
                     >
                       {plan.cta} — Monthly
@@ -142,7 +151,7 @@ const Pricing = () => {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => openCheckout("year")}
+                      onClick={() => handleUpgrade("year")}
                       disabled={loading}
                     >
                       {plan.cta} — Yearly (Save 17%)
