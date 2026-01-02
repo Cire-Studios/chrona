@@ -264,32 +264,35 @@ const Journal = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader rightContent={saveButton} />
+      <AppHeader />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
         {/* Date Header */}
         <div
-          className="mb-8 opacity-0 animate-fade-up"
+          className="flex items-start justify-between mb-8 opacity-0 animate-fade-up"
           style={{ animationDelay: "100ms", animationFillMode: "forwards" }}
         >
-          <div className="flex items-center gap-3 text-muted-foreground mb-2">
-            <Calendar size={18} className="text-primary" />
-            <span className="text-sm font-medium uppercase tracking-wider">
-              Daily Capture
-            </span>
-            {activeRole && (
-              <>
-                <span className="text-border">•</span>
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: activeRole.color }}
-                />
-                <span className="text-sm">{activeRole.title}</span>
-              </>
-            )}
+          <div>
+            <div className="flex items-center gap-3 text-muted-foreground mb-2">
+              <Calendar size={18} className="text-primary" />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Daily Capture
+              </span>
+              {activeRole && (
+                <>
+                  <span className="text-border">•</span>
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: activeRole.color }}
+                  />
+                  <span className="text-sm">{activeRole.title}</span>
+                </>
+              )}
+            </div>
+            <h1 className="font-serif text-3xl md:text-4xl font-bold">{today}</h1>
           </div>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold">{today}</h1>
+          {saveButton}
         </div>
 
         {/* No Role Warning */}

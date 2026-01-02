@@ -28,10 +28,9 @@ const navItems: NavItem[] = [
 
 interface AppHeaderProps {
   showRoleSelector?: boolean;
-  rightContent?: React.ReactNode;
 }
 
-export const AppHeader = ({ showRoleSelector = true, rightContent }: AppHeaderProps) => {
+export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
   const location = useLocation();
   const { signOut } = useAuth();
 
@@ -104,7 +103,6 @@ export const AppHeader = ({ showRoleSelector = true, rightContent }: AppHeaderPr
                 <RoleSelector />
               </div>
             )}
-            {rightContent}
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut size={18} />
             </Button>
