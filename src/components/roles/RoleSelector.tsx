@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useRoles, Role } from "@/contexts/RolesContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, ChevronDown, Briefcase, Check } from "lucide-react";
+import { Plus, ChevronDown, Briefcase, Check, Settings } from "lucide-react";
 import { CreateRoleDialog } from "./CreateRoleDialog";
 
 export const RoleSelector = () => {
@@ -110,7 +111,7 @@ export const RoleSelector = () => {
                 </button>
               ))}
 
-              <div className="border-t border-border mt-2 pt-2">
+              <div className="border-t border-border mt-2 pt-2 space-y-1">
                 <button
                   onClick={() => {
                     setIsOpen(false);
@@ -121,6 +122,14 @@ export const RoleSelector = () => {
                   <Plus size={16} />
                   <span className="text-sm">Add New Role</span>
                 </button>
+                <Link
+                  to="/roles"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Settings size={16} />
+                  <span className="text-sm">Manage Roles</span>
+                </Link>
               </div>
             </div>
           </>
