@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { RoleSelector } from "@/components/roles/RoleSelector";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { 
@@ -30,11 +29,7 @@ const navItems: NavItem[] = [
   { path: "/roles", label: "Roles", icon: Briefcase },
 ];
 
-interface AppHeaderProps {
-  showRoleSelector?: boolean;
-}
-
-export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
+export const AppHeader = () => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -78,21 +73,9 @@ export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
 
           {/* Right Side */}
           <div className="flex items-center gap-2">
-            {showRoleSelector && (
-              <div className="hidden sm:block">
-                <RoleSelector />
-              </div>
-            )}
             <UserMenu />
           </div>
         </div>
-
-        {/* Mobile Role Selector */}
-        {showRoleSelector && (
-          <div className="sm:hidden pb-3 -mt-1">
-            <RoleSelector />
-          </div>
-        )}
       </div>
     </header>
   );
