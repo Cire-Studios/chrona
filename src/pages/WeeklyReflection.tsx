@@ -5,7 +5,7 @@ import { RoleSelector } from "@/components/roles/RoleSelector";
 import { WeekSelector } from "@/components/weekly/WeekSelector";
 import { WeeklyEntryCard } from "@/components/weekly/WeeklyEntryCard";
 import { SignalFlag, SignalFlagBadge } from "@/components/weekly/SignalFlagBadge";
-import { ArrowLeft, Save, CheckCircle, LogOut, Calendar, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle, LogOut, Calendar, Sparkles, Layers } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -290,6 +290,12 @@ const WeeklyReflection = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to="/quarterly">
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+                <Layers size={16} />
+                <span className="hidden sm:inline">Quarterly</span>
+              </Button>
+            </Link>
             <Button
               variant={isSaved ? "outline" : "hero"}
               onClick={handleSave}

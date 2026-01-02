@@ -1,1 +1,4 @@
 project_id = "teenwunpgqkubmwklfvp"
+
+[functions.analyze-patterns]
+verify_jwt = false
