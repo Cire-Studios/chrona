@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { ImageFileData } from "@/pages/Journal";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 interface ImageUploadSectionProps {
   images: ImageFileData[];
   onImagesChange: (images: ImageFileData[]) => void;
@@ -26,6 +28,28 @@ export const ImageUploadSection = ({
       toast({
         title: "Too many images",
         description: `You can only upload up to ${maxImages} images.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file sizes
+    const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "File too large",
+        description: `Images must be under 5MB. ${oversizedFiles.length} file(s) exceeded the limit.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file types
+    const invalidFiles = files.filter(file => !file.type.startsWith("image/"));
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid file type",
+        description: "Only image files are allowed.",
         variant: "destructive",
       });
       return;
