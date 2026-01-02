@@ -24,10 +24,10 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-// Stripe price IDs for Chronicler tier
+// Stripe price IDs for Chronicler tier (production)
 const STRIPE_PRICES = {
-  monthly: "price_1Sl5DRRxFLKW85EwecJGMJMu",
-  yearly: "price_1Sl5DfRxFLKW85EwoVYgRdgd",
+  monthly: "price_1Sl7YKRubN3E3b7eWGAIY17R",
+  yearly: "price_1Sl7YVRubN3E3b7eXRgIR8GO",
 };
 
 // Tier limits
