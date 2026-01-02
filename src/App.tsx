@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RolesProvider } from "@/contexts/RolesContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+import { PasswordSetupGate } from "@/components/auth/PasswordSetupGate";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -37,16 +38,9 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/journal" element={<Journal />} />
-                <Route path="/weekly" element={<WeeklyReflection />} />
-                <Route path="/quarterly" element={<QuarterlyDistillation />} />
-                <Route path="/artifacts" element={<Artifacts />} />
-                <Route path="/roles" element={<Roles />} />
-                <Route path="/timeline" element={<Timeline />} />
-                <Route path="/settings" element={<Settings />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/features" element={<Features />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
@@ -54,6 +48,17 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/contact" element={<Contact />} />
+                
+                {/* Protected routes - require auth + password setup */}
+                <Route path="/dashboard" element={<PasswordSetupGate><Dashboard /></PasswordSetupGate>} />
+                <Route path="/journal" element={<PasswordSetupGate><Journal /></PasswordSetupGate>} />
+                <Route path="/weekly" element={<PasswordSetupGate><WeeklyReflection /></PasswordSetupGate>} />
+                <Route path="/quarterly" element={<PasswordSetupGate><QuarterlyDistillation /></PasswordSetupGate>} />
+                <Route path="/artifacts" element={<PasswordSetupGate><Artifacts /></PasswordSetupGate>} />
+                <Route path="/roles" element={<PasswordSetupGate><Roles /></PasswordSetupGate>} />
+                <Route path="/timeline" element={<PasswordSetupGate><Timeline /></PasswordSetupGate>} />
+                <Route path="/settings" element={<PasswordSetupGate><Settings /></PasswordSetupGate>} />
+                
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
