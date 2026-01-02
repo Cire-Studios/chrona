@@ -30,7 +30,7 @@ interface CreateRoleDialogProps {
 
 export const CreateRoleDialog = ({ open, onOpenChange }: CreateRoleDialogProps) => {
   const { createRole } = useRoles();
-  const { canCreateRole, tier, openCheckout } = useSubscription();
+  const { canCreateRole, tier, openCheckout, checkSubscription } = useSubscription();
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
@@ -108,6 +108,8 @@ export const CreateRoleDialog = ({ open, onOpenChange }: CreateRoleDialogProps) 
     setIsSubmitting(false);
 
     if (role) {
+      // Refresh subscription data to update roleCount for tier limits
+      await checkSubscription();
       setTitle("");
       setCompany("");
       setDescription("");
