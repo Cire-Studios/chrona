@@ -16,7 +16,6 @@ import { User, Mail, Save, Loader2 } from "lucide-react";
 
 interface Profile {
   display_name: string | null;
-  email: string | null;
 }
 
 export default function Settings() {
@@ -25,7 +24,7 @@ export default function Settings() {
   const { user, loading: authLoading } = useAuth();
   const { checkSubscription } = useSubscription();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile>({ display_name: null, email: null });
+  const [profile, setProfile] = useState<Profile>({ display_name: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -66,7 +65,7 @@ export default function Settings() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, email")
+        .select("display_name")
         .eq("user_id", user.id)
         .maybeSingle();
 
