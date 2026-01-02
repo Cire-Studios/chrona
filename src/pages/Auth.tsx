@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Logo } from "@/components/Logo";
+import { PublicHeader } from "@/components/layout/PublicHeader";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
@@ -85,9 +86,7 @@ const Auth = () => {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
       
       {/* Header */}
-      <header className="relative z-10 p-6">
-        <Logo />
-      </header>
+      <PublicHeader />
 
       {/* Auth Form */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-6">
@@ -196,6 +195,9 @@ const Auth = () => {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
