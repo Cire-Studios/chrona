@@ -141,6 +141,45 @@ export type Database = {
           },
         ]
       }
+      pattern_evidence: {
+        Row: {
+          created_at: string
+          id: string
+          pattern_id: string
+          signal_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pattern_id: string
+          signal_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pattern_id?: string
+          signal_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pattern_evidence_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "quarterly_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pattern_evidence_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "entry_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -205,6 +244,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quarterly_patterns: {
+        Row: {
+          category: Database["public"]["Enums"]["pattern_category"]
+          created_at: string
+          description: string
+          id: string
+          is_confirmed: boolean
+          record_id: string
+          signal_count: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["pattern_category"]
+          created_at?: string
+          description: string
+          id?: string
+          is_confirmed?: boolean
+          record_id: string
+          signal_count?: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["pattern_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          is_confirmed?: boolean
+          record_id?: string
+          signal_count?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quarterly_patterns_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "quarterly_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quarterly_records: {
+        Row: {
+          created_at: string
+          finalized_at: string | null
+          id: string
+          quarter_end_date: string
+          quarter_start_date: string
+          role_id: string
+          status: string
+          summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          finalized_at?: string | null
+          id?: string
+          quarter_end_date: string
+          quarter_start_date: string
+          role_id: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          finalized_at?: string | null
+          id?: string
+          quarter_end_date?: string
+          quarter_start_date?: string
+          role_id?: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       roles: {
         Row: {
@@ -289,6 +411,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      pattern_category:
+        | "growth"
+        | "scope_change"
+        | "sustained_impact"
+        | "skill_development"
+        | "leadership"
+        | "collaboration"
       signal_flag: "delivery" | "ownership" | "influence" | "learning"
     }
     CompositeTypes: {
@@ -417,6 +546,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      pattern_category: [
+        "growth",
+        "scope_change",
+        "sustained_impact",
+        "skill_development",
+        "leadership",
+        "collaboration",
+      ],
       signal_flag: ["delivery", "ownership", "influence", "learning"],
     },
   },

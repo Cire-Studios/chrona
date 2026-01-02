@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Journal from "./pages/Journal";
 import WeeklyReflection from "./pages/WeeklyReflection";
+import QuarterlyDistillation from "./pages/QuarterlyDistillation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/journal" element={<Journal />} />
               <Route path="/weekly" element={<WeeklyReflection />} />
+              <Route path="/quarterly" element={<QuarterlyDistillation />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
