@@ -292,38 +292,41 @@ const WeeklyReflection = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader rightContent={saveButton} />
+      <AppHeader />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
         {/* Page Header */}
         <div
-          className="mb-8 opacity-0 animate-fade-up"
+          className="flex items-start justify-between mb-8 opacity-0 animate-fade-up"
           style={{ animationDelay: "100ms", animationFillMode: "forwards" }}
         >
-          <div className="flex items-center gap-3 text-muted-foreground mb-2">
-            <Sparkles size={18} className="text-primary" />
-            <span className="text-sm font-medium uppercase tracking-wider">
-              Weekly Reflection
-            </span>
-            {activeRole && (
-              <>
-                <span className="text-border">•</span>
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: activeRole.color }}
-                />
-                <span className="text-sm">{activeRole.title}</span>
-              </>
-            )}
+          <div>
+            <div className="flex items-center gap-3 text-muted-foreground mb-2">
+              <Sparkles size={18} className="text-primary" />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Weekly Reflection
+              </span>
+              {activeRole && (
+                <>
+                  <span className="text-border">•</span>
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: activeRole.color }}
+                  />
+                  <span className="text-sm">{activeRole.title}</span>
+                </>
+              )}
+            </div>
+            <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
+              What Mattered This Week?
+            </h1>
+            <p className="text-muted-foreground max-w-2xl">
+              Review your daily logs and select the entries that genuinely mattered. 
+              Apply signal flags to classify why the work was important.
+            </p>
           </div>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
-            What Mattered This Week?
-          </h1>
-          <p className="text-muted-foreground max-w-2xl">
-            Review your daily logs and select the entries that genuinely mattered. 
-            Apply signal flags to classify why the work was important.
-          </p>
+          {saveButton}
         </div>
 
         {/* Week Selector */}
