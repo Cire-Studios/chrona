@@ -2,15 +2,15 @@ import { Link, useLocation } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { RoleSelector } from "@/components/roles/RoleSelector";
-import { useAuth } from "@/contexts/AuthContext";
+import { UserMenu } from "@/components/layout/UserMenu";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { 
-  LogOut, 
-  LayoutDashboard, 
   PenLine, 
   Sparkles, 
   Layers,
   FileText,
   TrendingUp,
+  Briefcase,
   LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,12 +22,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/journal", label: "Journal", icon: PenLine },
   { path: "/weekly", label: "Weekly", icon: Sparkles },
   { path: "/quarterly", label: "Quarterly", icon: Layers },
   { path: "/artifacts", label: "Artifacts", icon: FileText },
   { path: "/timeline", label: "Timeline", icon: TrendingUp },
+  { path: "/roles", label: "Roles", icon: Briefcase },
 ];
 
 interface AppHeaderProps {
@@ -36,7 +36,6 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
   const location = useLocation();
-  const { signOut } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -44,14 +43,15 @@ export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link to="/dashboard">
+          {/* Left: Mobile Nav + Logo */}
+          <div className="flex items-center gap-2">
+            <MobileNav />
+            <Link to="/dashboard" className="flex-shrink-0">
               <Logo size="sm" />
             </Link>
           </div>
 
-          {/* Navigation - Center */}
+          {/* Navigation - Center (Desktop only) */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -76,30 +76,6 @@ export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
             })}
           </nav>
 
-          {/* Mobile Navigation */}
-          <nav className="flex md:hidden items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <Link key={item.path} to={item.path}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "transition-colors",
-                      active
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Icon size={18} />
-                  </Button>
-                </Link>
-              );
-            })}
-          </nav>
-
           {/* Right Side */}
           <div className="flex items-center gap-2">
             {showRoleSelector && (
@@ -107,9 +83,7 @@ export const AppHeader = ({ showRoleSelector = true }: AppHeaderProps) => {
                 <RoleSelector />
               </div>
             )}
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut size={18} />
-            </Button>
+            <UserMenu />
           </div>
         </div>
 

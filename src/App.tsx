@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import Timeline from "./pages/Timeline";
+import Settings from "./pages/Settings";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/artifacts" element={<Artifacts />} />
               <Route path="/roles" element={<Roles />} />
               <Route path="/timeline" element={<Timeline />} />
+              <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
