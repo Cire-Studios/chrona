@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Footer } from "@/components/Footer";
@@ -39,6 +39,7 @@ const Auth = () => {
     setNeedsPasswordSetup
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -50,14 +51,17 @@ const Auth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<AuthStep>("form");
 
+  // Show password setup if user is logged in but needs to set password
+  useEffect(() => {
+    if (user && needsPasswordSetup && step !== "password-setup") {
+      setStep("password-setup");
+    }
+  }, [user, needsPasswordSetup, step]);
+
   // Redirect if already logged in and doesn't need password setup
   if (user && !loading && !needsPasswordSetup) {
-    return <Navigate to="/journal" replace />;
-  }
-
-  // Show password setup if user is logged in but needs to set password
-  if (user && needsPasswordSetup && step !== "password-setup") {
-    setStep("password-setup");
+    const from = location.state?.from?.pathname || "/journal";
+    return <Navigate to={from} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
