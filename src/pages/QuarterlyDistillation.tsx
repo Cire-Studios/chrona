@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
@@ -57,125 +57,141 @@ const QuarterlyDistillation = () => {
   const quarterNumber = Math.ceil((quarterStart.getMonth() + 1) / 3);
   const quarterLabel = `Q${quarterNumber} ${quarterStart.getFullYear()}`;
 
-  // Load signals and existing patterns for the quarter
-  const loadQuarterData = useCallback(async () => {
-    if (!user || !activeRole) return;
-
-    setIsLoading(true);
-
-    try {
-      const quarterEnd = endOfQuarter(quarterStart);
-      const startDate = format(quarterStart, "yyyy-MM-dd");
-      const endDate = format(quarterEnd, "yyyy-MM-dd");
-
-      // Load entry signals for this quarter through weekly reflections
-      const { data: signalsData, error: signalsError } = await supabase
-        .from("entry_signals")
-        .select(`
-          id,
-          signal_flag,
-          context,
-          journal_entries!inner (
-            entry_date,
-            accomplishments,
-            decisions,
-            role_id
-          )
-        `)
-        .eq("user_id", user.id);
-
-      if (signalsError) throw signalsError;
-
-      // Filter signals for this role and quarter
-      const filteredSignals = (signalsData || [])
-        .filter((s: any) => {
-          const entryDate = s.journal_entries?.entry_date;
-          const roleId = s.journal_entries?.role_id;
-          return (
-            roleId === activeRole.id &&
-            entryDate >= startDate &&
-            entryDate <= endDate
-          );
-        })
-        .map((s: any) => ({
-          id: s.id,
-          signal_flag: s.signal_flag,
-          context: s.context,
-          entry_date: s.journal_entries.entry_date,
-          accomplishments: s.journal_entries.accomplishments,
-          decisions: s.journal_entries.decisions,
-        }));
-
-      setSignals(filteredSignals);
-
-      // Check for existing quarterly record
-      const { data: recordData, error: recordError } = await supabase
-        .from("quarterly_records")
-        .select("id, status, summary")
-        .eq("role_id", activeRole.id)
-        .eq("quarter_start_date", startDate)
-        .maybeSingle();
-
-      if (recordError) throw recordError;
-
-      if (recordData) {
-        setRecord(recordData as QuarterlyRecord);
-
-        // Load existing patterns
-        const { data: patternsData, error: patternsError } = await supabase
-          .from("quarterly_patterns")
-          .select(`
-            id,
-            category,
-            title,
-            description,
-            signal_count,
-            is_confirmed,
-            pattern_evidence (
-              signal_id
-            )
-          `)
-          .eq("record_id", recordData.id);
-
-        if (patternsError) throw patternsError;
-
-        // Map patterns with their evidence
-        const patternsWithEvidence = (patternsData || []).map((p: any) => {
-          const evidenceIds = p.pattern_evidence?.map((e: any) => e.signal_id) || [];
-          const evidence = filteredSignals.filter((s: Signal) => evidenceIds.includes(s.id));
-          return {
-            id: p.id,
-            category: p.category as PatternCategory,
-            title: p.title,
-            description: p.description,
-            signal_count: p.signal_count,
-            is_confirmed: p.is_confirmed,
-            evidence,
-          };
-        });
-
-        setPatterns(patternsWithEvidence);
-      } else {
-        setRecord(null);
-        setPatterns([]);
-      }
-    } catch (error) {
-      console.error("Error loading quarter data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load quarterly data.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, activeRole, quarterStart, toast]);
 
   const quarterEnd = endOfQuarter(quarterStart);
 
   useEffect(() => {
-    loadQuarterData();
-  }, [loadQuarterData]);
+    if (!user || !activeRole) {
+      setSignals([]);
+      setPatterns([]);
+      setRecord(null);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const run = async () => {
+      setIsLoading(true);
+
+      try {
+        const localQuarterEnd = endOfQuarter(quarterStart);
+        const startDate = format(quarterStart, "yyyy-MM-dd");
+        const endDate = format(localQuarterEnd, "yyyy-MM-dd");
+
+        // Load entry signals for this quarter through weekly reflections
+        const { data: signalsData, error: signalsError } = await supabase
+          .from("entry_signals")
+          .select(`
+            id,
+            signal_flag,
+            context,
+            journal_entries!inner (
+              entry_date,
+              accomplishments,
+              decisions,
+              role_id
+            )
+          `)
+          .eq("user_id", user.id);
+
+        if (signalsError) throw signalsError;
+        if (cancelled) return;
+
+        // Filter signals for this role and quarter
+        const filteredSignals = (signalsData || [])
+          .filter((s: any) => {
+            const entryDate = s.journal_entries?.entry_date;
+            const roleId = s.journal_entries?.role_id;
+            return (
+              roleId === activeRole.id &&
+              entryDate >= startDate &&
+              entryDate <= endDate
+            );
+          })
+          .map((s: any) => ({
+            id: s.id,
+            signal_flag: s.signal_flag,
+            context: s.context,
+            entry_date: s.journal_entries.entry_date,
+            accomplishments: s.journal_entries.accomplishments,
+            decisions: s.journal_entries.decisions,
+          }));
+
+        setSignals(filteredSignals);
+
+        // Check for existing quarterly record
+        const { data: recordData, error: recordError } = await supabase
+          .from("quarterly_records")
+          .select("id, status, summary")
+          .eq("role_id", activeRole.id)
+          .eq("quarter_start_date", startDate)
+          .maybeSingle();
+
+        if (recordError) throw recordError;
+        if (cancelled) return;
+
+        if (recordData) {
+          setRecord(recordData as QuarterlyRecord);
+
+          // Load existing patterns
+          const { data: patternsData, error: patternsError } = await supabase
+            .from("quarterly_patterns")
+            .select(`
+              id,
+              category,
+              title,
+              description,
+              signal_count,
+              is_confirmed,
+              pattern_evidence (
+                signal_id
+              )
+            `)
+            .eq("record_id", recordData.id);
+
+          if (patternsError) throw patternsError;
+          if (cancelled) return;
+
+          // Map patterns with their evidence
+          const patternsWithEvidence = (patternsData || []).map((p: any) => {
+            const evidenceIds = p.pattern_evidence?.map((e: any) => e.signal_id) || [];
+            const evidence = filteredSignals.filter((s: Signal) => evidenceIds.includes(s.id));
+            return {
+              id: p.id,
+              category: p.category as PatternCategory,
+              title: p.title,
+              description: p.description,
+              signal_count: p.signal_count,
+              is_confirmed: p.is_confirmed,
+              evidence,
+            };
+          });
+
+          setPatterns(patternsWithEvidence);
+        } else {
+          setRecord(null);
+          setPatterns([]);
+        }
+      } catch (error) {
+        console.error("Error loading quarter data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load quarterly data.",
+          variant: "destructive",
+        });
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, activeRole?.id, quarterStart.getTime()]);
+
 
   const analyzePatterns = async () => {
     if (!user || !activeRole || signals.length === 0) return;
