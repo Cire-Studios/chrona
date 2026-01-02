@@ -1,6 +1,7 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { Logo } from "./Logo";
+import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
   return (
@@ -15,7 +16,9 @@ export const HeroSection = () => {
         <Logo />
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm">Sign In</Button>
-          <Button variant="hero" size="sm">Get Started</Button>
+          <Link to="/journal">
+            <Button variant="hero" size="sm">Get Started</Button>
+          </Link>
         </div>
       </nav>
 
@@ -39,10 +42,12 @@ export const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
-            <Button variant="hero" size="xl">
-              Start Journaling
-              <ArrowRight size={20} />
-            </Button>
+            <Link to="/journal">
+              <Button variant="hero" size="xl">
+                Start Journaling
+                <ArrowRight size={20} />
+              </Button>
+            </Link>
             <Button variant="hero-secondary" size="xl">
               See How It Works
             </Button>
