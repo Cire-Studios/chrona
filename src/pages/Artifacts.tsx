@@ -4,10 +4,9 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { TimeWindowSelector } from "@/components/artifacts/TimeWindowSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoles } from "@/contexts/RolesContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,11 +20,8 @@ import {
   Copy, 
   Check,
   AlertCircle,
-  CalendarIcon,
-  X
 } from "lucide-react";
-import { format, parseISO, isAfter, isBefore, startOfQuarter } from "date-fns";
-import { cn } from "@/lib/utils";
+import { format, parseISO, startOfQuarter, endOfQuarter } from "date-fns";
 
 interface Pattern {
   id: string;
@@ -35,6 +31,13 @@ interface Pattern {
   signal_count: number;
   is_confirmed: boolean;
   quarter_start_date?: string;
+}
+
+interface QuarterRecord {
+  id: string;
+  quarter_start_date: string;
+  quarter_end_date: string;
+  pattern_count: number;
 }
 
 interface STARStory {
@@ -59,8 +62,11 @@ const Artifacts = () => {
   const { user, loading: authLoading } = useAuth();
   const { activeRole, loading: rolesLoading } = useRoles();
   
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [selectedRange, setSelectedRange] = useState<[Date, Date]>(() => {
+    const now = new Date();
+    return [startOfQuarter(new Date(now.getFullYear() - 1, 0, 1)), endOfQuarter(now)];
+  });
+  const [quarterRecords, setQuarterRecords] = useState<QuarterRecord[]>([]);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [artifact, setArtifact] = useState<GeneratedArtifact | null>(null);
   const [selectedType, setSelectedType] = useState<ArtifactType>("resume");
@@ -68,55 +74,70 @@ const Artifacts = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
-  // Calculate date range label
-  const getDateRangeLabel = () => {
-    if (!activeRole) return "";
-    
-    const roleStart = activeRole.start_date ? parseISO(activeRole.start_date) : null;
-    const roleEnd = activeRole.end_date ? parseISO(activeRole.end_date) : new Date();
-    
-    const effectiveStart = startDate || roleStart;
-    const effectiveEnd = endDate || roleEnd;
-    
-    if (effectiveStart && effectiveEnd) {
-      return `${format(effectiveStart, "MMM yyyy")} - ${format(effectiveEnd, "MMM yyyy")}`;
-    } else if (effectiveStart) {
-      return `From ${format(effectiveStart, "MMM yyyy")}`;
-    } else if (effectiveEnd) {
-      return `Until ${format(effectiveEnd, "MMM yyyy")}`;
-    }
-    return "All time";
-  };
+  // Get role dates
+  const roleStartDate = activeRole?.start_date ? parseISO(activeRole.start_date) : null;
+  const roleEndDate = activeRole?.end_date ? parseISO(activeRole.end_date) : new Date();
 
-  const loadConfirmedPatterns = useCallback(async () => {
+  // Initialize range based on role dates
+  useEffect(() => {
+    if (activeRole) {
+      const start = roleStartDate || new Date(new Date().getFullYear() - 1, 0, 1);
+      const end = roleEndDate || new Date();
+      setSelectedRange([startOfQuarter(start), endOfQuarter(end)]);
+    }
+  }, [activeRole?.id]);
+
+  // Load all quarterly records for the role
+  const loadQuarterRecords = useCallback(async () => {
+    if (!user || !activeRole) return;
+
+    try {
+      // Get all quarterly records with pattern counts
+      const { data: records, error } = await supabase
+        .from("quarterly_records")
+        .select(`
+          id,
+          quarter_start_date,
+          quarter_end_date,
+          quarterly_patterns!inner(id)
+        `)
+        .eq("user_id", user.id)
+        .eq("role_id", activeRole.id)
+        .eq("quarterly_patterns.is_confirmed", true)
+        .order("quarter_start_date", { ascending: true });
+
+      if (error) throw error;
+
+      // Transform to include pattern count
+      const recordsWithCounts: QuarterRecord[] = (records || []).map(r => ({
+        id: r.id,
+        quarter_start_date: r.quarter_start_date,
+        quarter_end_date: r.quarter_end_date,
+        pattern_count: Array.isArray(r.quarterly_patterns) ? r.quarterly_patterns.length : 0,
+      }));
+
+      setQuarterRecords(recordsWithCounts);
+    } catch (error) {
+      console.error("Error loading quarter records:", error);
+    }
+  }, [user, activeRole]);
+
+  // Load patterns for selected range
+  const loadPatternsForRange = useCallback(async () => {
     if (!user || !activeRole) return;
 
     setIsLoading(true);
     setArtifact(null);
 
     try {
-      // Determine date range - default to role lifespan
-      const roleStart = activeRole.start_date ? parseISO(activeRole.start_date) : null;
-      const roleEnd = activeRole.end_date ? parseISO(activeRole.end_date) : new Date();
-      
-      const effectiveStart = startDate || roleStart;
-      const effectiveEnd = endDate || roleEnd;
-
-      // Get all quarterly records for this role within the date range
-      let query = supabase
+      // Get quarterly records in the selected range
+      const { data: records, error: recordsError } = await supabase
         .from("quarterly_records")
-        .select("id, quarter_start_date, quarter_end_date")
+        .select("id, quarter_start_date")
         .eq("user_id", user.id)
-        .eq("role_id", activeRole.id);
-
-      if (effectiveStart) {
-        query = query.gte("quarter_start_date", format(startOfQuarter(effectiveStart), "yyyy-MM-dd"));
-      }
-      if (effectiveEnd) {
-        query = query.lte("quarter_start_date", format(effectiveEnd, "yyyy-MM-dd"));
-      }
-
-      const { data: records, error: recordsError } = await query;
+        .eq("role_id", activeRole.id)
+        .gte("quarter_start_date", format(startOfQuarter(selectedRange[0]), "yyyy-MM-dd"))
+        .lte("quarter_start_date", format(startOfQuarter(selectedRange[1]), "yyyy-MM-dd"));
 
       if (recordsError) throw recordsError;
       
@@ -126,7 +147,7 @@ const Artifacts = () => {
         return;
       }
 
-      // Get confirmed patterns from all quarters
+      // Get confirmed patterns from these quarters
       const recordIds = records.map(r => r.id);
       const { data: patternsData, error } = await supabase
         .from("quarterly_patterns")
@@ -137,7 +158,6 @@ const Artifacts = () => {
 
       if (error) throw error;
       
-      // Add quarter info to patterns
       const patternsWithQuarter = (patternsData || []).map(p => ({
         ...p,
         quarter_start_date: p.quarterly_records?.quarter_start_date
@@ -150,15 +170,23 @@ const Artifacts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, activeRole, startDate, endDate]);
+  }, [user, activeRole, selectedRange]);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
       return;
     }
-    loadConfirmedPatterns();
-  }, [authLoading, user, navigate, loadConfirmedPatterns]);
+    loadQuarterRecords();
+  }, [authLoading, user, navigate, loadQuarterRecords]);
+
+  useEffect(() => {
+    loadPatternsForRange();
+  }, [loadPatternsForRange]);
+
+  const getDateRangeLabel = () => {
+    return `${format(selectedRange[0], "MMM yyyy")} – ${format(selectedRange[1], "MMM yyyy")}`;
+  };
 
   const handleGenerateArtifact = async () => {
     if (!activeRole || patterns.length === 0) return;
@@ -172,7 +200,7 @@ const Artifacts = () => {
             title: p.title,
             description: p.description,
             signal_count: p.signal_count,
-            quarter: p.quarter_start_date ? format(parseISO(p.quarter_start_date), "Q'Q' yyyy") : undefined,
+            quarter: p.quarter_start_date ? format(parseISO(p.quarter_start_date), "'Q'Q yyyy") : undefined,
           })),
           roleTitle: activeRole.title,
           company: activeRole.company,
@@ -283,102 +311,22 @@ const Artifacts = () => {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Date Range Card */}
+            {/* Time Window Card */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Time Period</CardTitle>
                 <CardDescription className="text-xs">
-                  Defaults to role lifespan. Optionally filter to specific dates.
+                  Select the quarters to include
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Start Date</Label>
-                  <div className="flex gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "flex-1 justify-start text-left font-normal",
-                            !startDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? format(startDate, "MMM d, yyyy") : "Role start"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={startDate}
-                          onSelect={setStartDate}
-                          defaultMonth={startDate || (activeRole.start_date ? parseISO(activeRole.start_date) : undefined)}
-                          disabled={(date) => 
-                            (endDate ? isAfter(date, endDate) : false) ||
-                            isAfter(date, new Date())
-                          }
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {startDate && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setStartDate(undefined)}
-                        className="shrink-0"
-                      >
-                        <X size={16} />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm">End Date</Label>
-                  <div className="flex gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "flex-1 justify-start text-left font-normal",
-                            !endDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {endDate ? format(endDate, "MMM d, yyyy") : "Present"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={endDate}
-                          onSelect={setEndDate}
-                          defaultMonth={endDate}
-                          disabled={(date) => 
-                            (startDate ? isBefore(date, startDate) : false) ||
-                            isAfter(date, new Date())
-                          }
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {endDate && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEndDate(undefined)}
-                        className="shrink-0"
-                      >
-                        <X size={16} />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-2 text-xs text-muted-foreground">
-                  Using: {getDateRangeLabel()}
-                </div>
+              <CardContent>
+                <TimeWindowSelector
+                  roleStartDate={roleStartDate}
+                  roleEndDate={roleEndDate}
+                  quarterRecords={quarterRecords}
+                  selectedRange={selectedRange}
+                  onRangeChange={setSelectedRange}
+                />
               </CardContent>
             </Card>
 
