@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { NotificationSettingsCard } from "@/components/settings/NotificationSettingsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -203,6 +204,9 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Notification Settings */}
+          <NotificationSettingsCard />
         </div>
       </main>
     </div>

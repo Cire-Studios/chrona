@@ -26,6 +26,7 @@ interface WeeklyEntryCardProps {
   onToggleSelect: () => void;
   onSignalToggle: (flag: SignalFlag) => void;
   onContextChange: (flag: SignalFlag, context: string) => void;
+  disabled?: boolean;
 }
 
 export const WeeklyEntryCard = ({
@@ -35,6 +36,7 @@ export const WeeklyEntryCard = ({
   onToggleSelect,
   onSignalToggle,
   onContextChange,
+  disabled = false,
 }: WeeklyEntryCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -71,11 +73,13 @@ export const WeeklyEntryCard = ({
             {/* Select checkbox */}
             <button
               onClick={onToggleSelect}
+              disabled={disabled}
               className={cn(
                 "w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0",
                 isSelected
                   ? "bg-primary border-primary text-primary-foreground"
-                  : "border-muted-foreground/30 hover:border-muted-foreground/60"
+                  : "border-muted-foreground/30 hover:border-muted-foreground/60",
+                disabled && "opacity-50 cursor-not-allowed"
               )}
             >
               {isSelected && <Check size={14} />}
