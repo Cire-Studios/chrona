@@ -6,8 +6,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUpWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
+  sendOtp: (email: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -38,13 +40,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUpWithMagicLink = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/journal`;
+  const sendOtp = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: redirectUrl,
+        shouldCreateUser: true,
       },
+    });
+    return { error: error as Error | null };
+  };
+
+  const verifyOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "email",
     });
     return { error: error as Error | null };
   };
@@ -53,6 +63,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+    });
+    return { error: error as Error | null };
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/journal`,
+      },
     });
     return { error: error as Error | null };
   };
@@ -72,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUpWithMagicLink, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, sendOtp, verifyOtp, signIn, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
