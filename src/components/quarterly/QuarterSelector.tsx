@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarIcon, RotateCcw } from "lucide-react";
 import { startOfQuarter, endOfQuarter, addQuarters, subQuarters, format, isAfter } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,10 @@ export const QuarterSelector = ({ quarterStart, onChange }: QuarterSelectorProps
     if (!isCurrentQuarter) {
       onChange(addQuarters(quarterStart, 1));
     }
+  };
+
+  const goToCurrentQuarter = () => {
+    onChange(currentQuarterStart);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -101,6 +105,18 @@ export const QuarterSelector = ({ quarterStart, onChange }: QuarterSelectorProps
       >
         <ChevronRight size={18} />
       </Button>
+
+      {!isCurrentQuarter && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToCurrentQuarter}
+          className="h-8 gap-1.5 text-xs ml-2"
+        >
+          <RotateCcw size={14} />
+          Current
+        </Button>
+      )}
     </div>
   );
 };

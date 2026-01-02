@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarIcon, RotateCcw } from "lucide-react";
 import { startOfWeek, endOfWeek, addWeeks, subWeeks, format, isAfter } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,10 @@ export const WeekSelector = ({ weekStart, onChange }: WeekSelectorProps) => {
     if (!isCurrentWeek) {
       onChange(addWeeks(weekStart, 1));
     }
+  };
+
+  const goToCurrentWeek = () => {
+    onChange(currentWeekStart);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -95,6 +99,18 @@ export const WeekSelector = ({ weekStart, onChange }: WeekSelectorProps) => {
       >
         <ChevronRight size={18} />
       </Button>
+
+      {!isCurrentWeek && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToCurrentWeek}
+          className="h-8 gap-1.5 text-xs ml-2"
+        >
+          <RotateCcw size={14} />
+          Current
+        </Button>
+      )}
     </div>
   );
 };
