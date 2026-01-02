@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
 import { QuarterSelector } from "@/components/quarterly/QuarterSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -196,6 +197,7 @@ const Artifacts = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
+      <StickyRoleSelector />
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">

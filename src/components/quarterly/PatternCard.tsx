@@ -23,6 +23,7 @@ interface PatternCardProps {
   onConfirm: () => void;
   onReject: () => void;
   isNew?: boolean;
+  disabled?: boolean;
 }
 
 export const PatternCard = ({
@@ -35,6 +36,7 @@ export const PatternCard = ({
   onConfirm,
   onReject,
   isNew,
+  disabled = false,
 }: PatternCardProps) => {
   const [showEvidence, setShowEvidence] = useState(false);
 
@@ -66,25 +68,29 @@ export const PatternCard = ({
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             {!isConfirmed ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onReject}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                >
-                  <X size={16} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onConfirm}
-                  className="gap-1.5"
-                >
-                  <Check size={14} />
-                  Confirm
-                </Button>
-              </>
+              disabled ? (
+                <span className="text-xs text-muted-foreground">View only</span>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onReject}
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  >
+                    <X size={16} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onConfirm}
+                    className="gap-1.5"
+                  >
+                    <Check size={14} />
+                    Confirm
+                  </Button>
+                </>
+              )
             ) : (
               <span className="flex items-center gap-1.5 text-sm text-primary">
                 <Check size={14} />

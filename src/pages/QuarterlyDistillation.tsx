@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
+import { ReminderBanner } from "@/components/notifications/ReminderBanner";
 import { QuarterSelector } from "@/components/quarterly/QuarterSelector";
 import { PatternCard } from "@/components/quarterly/PatternCard";
 import { PatternCategory } from "@/components/quarterly/PatternCategoryBadge";
-import { CheckCircle, Layers, Lock, AlertCircle, Sparkles } from "lucide-react";
+import { CheckCircle, Layers, Lock, AlertCircle, Sparkles, Clock } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoles } from "@/contexts/RolesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfQuarter, endOfQuarter, format } from "date-fns";
+import { canEditQuarterly, isQuarterlyFinalizationWindowOpen, isPastQuarter, getFinalizationWindowDaysRemaining } from "@/lib/dateUtils";
 
 interface Signal {
   id: string;
@@ -387,6 +389,12 @@ const QuarterlyDistillation = () => {
 
   const confirmedCount = patterns.filter((p) => p.is_confirmed).length;
   const isFinalized = record?.status === "finalized";
+  
+  // Check if quarterly editing is allowed
+  const isEditable = canEditQuarterly(quarterStart, isFinalized);
+  const inFinalizationWindow = isQuarterlyFinalizationWindowOpen(quarterStart);
+  const isPast = isPastQuarter(quarterStart);
+  const daysRemaining = getFinalizationWindowDaysRemaining(quarterStart);
 
   if (!authLoading && !user) {
     return <Navigate to="/auth" replace />;
@@ -400,7 +408,7 @@ const QuarterlyDistillation = () => {
     );
   }
 
-  const finalizeButton = !isFinalized && confirmedCount > 0 ? (
+  const finalizeButton = !isFinalized && confirmedCount > 0 && isEditable ? (
     <Button
       variant={isSaved ? "outline" : "hero"}
       onClick={handleFinalize}
@@ -421,12 +429,18 @@ const QuarterlyDistillation = () => {
         </>
       )}
     </Button>
+  ) : isPast && !isFinalized ? (
+    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+      <Lock size={16} />
+      <span>Window Closed</span>
+    </div>
   ) : null;
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
       <StickyRoleSelector />
+      <ReminderBanner />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
@@ -458,7 +472,23 @@ const QuarterlyDistillation = () => {
           className="flex items-center justify-between mb-6 opacity-0 animate-fade-up"
           style={{ animationDelay: "150ms", animationFillMode: "forwards" }}
         >
-          <QuarterSelector quarterStart={quarterStart} onChange={setQuarterStart} />
+          <div className="flex items-center gap-4">
+            <QuarterSelector quarterStart={quarterStart} onChange={setQuarterStart} />
+            
+            {inFinalizationWindow && !isFinalized && (
+              <span className="flex items-center gap-1.5 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-full">
+                <Clock size={12} />
+                {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} left to finalize
+              </span>
+            )}
+            
+            {isPast && !isFinalized && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded-full">
+                <Lock size={12} />
+                Window closed - view only
+              </span>
+            )}
+          </div>
 
           {isFinalized && (
             <span className="flex items-center gap-2 text-sm text-primary">
@@ -502,7 +532,7 @@ const QuarterlyDistillation = () => {
                   </p>
                 </div>
 
-                {signals.length > 0 && !isFinalized && (
+                {signals.length > 0 && !isFinalized && isEditable && (
                   <Button
                     onClick={analyzePatterns}
                     disabled={isAnalyzing}
@@ -557,8 +587,9 @@ const QuarterlyDistillation = () => {
                     signalCount={pattern.signal_count}
                     isConfirmed={pattern.is_confirmed}
                     evidence={pattern.evidence}
-                    onConfirm={() => handleConfirmPattern(pattern.id)}
-                    onReject={() => handleRejectPattern(pattern.id)}
+                    onConfirm={() => isEditable && handleConfirmPattern(pattern.id)}
+                    onReject={() => isEditable && handleRejectPattern(pattern.id)}
+                    disabled={!isEditable}
                   />
                 ))}
               </div>

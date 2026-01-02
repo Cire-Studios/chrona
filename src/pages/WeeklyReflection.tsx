@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
+import { ReminderBanner } from "@/components/notifications/ReminderBanner";
 import { WeekSelector } from "@/components/weekly/WeekSelector";
 import { WeeklyEntryCard } from "@/components/weekly/WeeklyEntryCard";
 import { SignalFlag, SignalFlagBadge } from "@/components/weekly/SignalFlagBadge";
-import { Save, CheckCircle, Calendar, Sparkles } from "lucide-react";
+import { Save, CheckCircle, Calendar, Sparkles, Lock } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoles } from "@/contexts/RolesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfWeek, endOfWeek, format } from "date-fns";
+import { isCurrentWeek, isPastWeek } from "@/lib/dateUtils";
 
 interface JournalEntry {
   id: string;
@@ -272,6 +274,10 @@ const WeeklyReflection = () => {
     0
   );
 
+  // Check if week is editable (only current week can be edited)
+  const isEditable = isCurrentWeek(weekStart);
+  const isViewOnly = isPastWeek(weekStart);
+
   // Redirect to auth if not logged in
   if (!authLoading && !user) {
     return <Navigate to="/auth" replace />;
@@ -285,11 +291,16 @@ const WeeklyReflection = () => {
     );
   }
 
-  const saveButton = (
+  const saveButton = isViewOnly ? (
+    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+      <Lock size={16} />
+      <span>View Only</span>
+    </div>
+  ) : (
     <Button
       variant={isSaved ? "outline" : "hero"}
       onClick={handleSave}
-      disabled={isSaving || !activeRole || selectedCount === 0}
+      disabled={isSaving || !activeRole || selectedCount === 0 || !isEditable}
       className="min-w-[100px]"
     >
       {isSaving ? (
@@ -312,6 +323,7 @@ const WeeklyReflection = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <StickyRoleSelector />
+      <ReminderBanner />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
@@ -343,7 +355,15 @@ const WeeklyReflection = () => {
           className="flex items-center justify-between mb-6 opacity-0 animate-fade-up"
           style={{ animationDelay: "150ms", animationFillMode: "forwards" }}
         >
-          <WeekSelector weekStart={weekStart} onChange={setWeekStart} />
+          <div className="flex items-center gap-4">
+            <WeekSelector weekStart={weekStart} onChange={setWeekStart} />
+            {isViewOnly && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded-full">
+                <Lock size={12} />
+                Past week - view only
+              </span>
+            )}
+          </div>
           
           {selectedCount > 0 && (
             <div className="text-sm text-muted-foreground">
@@ -413,9 +433,10 @@ const WeeklyReflection = () => {
                   entry={entry}
                   isSelected={!!selectedEntries[entry.id]}
                   signals={selectedEntries[entry.id] || []}
-                  onToggleSelect={() => handleToggleSelect(entry.id)}
-                  onSignalToggle={(flag) => handleSignalToggle(entry.id, flag)}
-                  onContextChange={(flag, context) => handleContextChange(entry.id, flag, context)}
+                  onToggleSelect={() => !isViewOnly && handleToggleSelect(entry.id)}
+                  onSignalToggle={(flag) => !isViewOnly && handleSignalToggle(entry.id, flag)}
+                  onContextChange={(flag, context) => !isViewOnly && handleContextChange(entry.id, flag, context)}
+                  disabled={isViewOnly}
                 />
               ))
             )}
