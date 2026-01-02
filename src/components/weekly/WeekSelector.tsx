@@ -1,6 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
 import { startOfWeek, endOfWeek, addWeeks, subWeeks, format, isAfter } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface WeekSelectorProps {
   weekStart: Date;
@@ -8,6 +16,7 @@ interface WeekSelectorProps {
 }
 
 export const WeekSelector = ({ weekStart, onChange }: WeekSelectorProps) => {
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const isCurrentWeek = weekStart.getTime() === currentWeekStart.getTime();
@@ -23,6 +32,17 @@ export const WeekSelector = ({ weekStart, onChange }: WeekSelectorProps) => {
     }
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const newWeekStart = startOfWeek(date, { weekStartsOn: 1 });
+      // Don't allow future weeks
+      if (!isAfter(newWeekStart, currentWeekStart)) {
+        onChange(newWeekStart);
+      }
+    }
+    setCalendarOpen(false);
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Button
@@ -34,14 +54,36 @@ export const WeekSelector = ({ weekStart, onChange }: WeekSelectorProps) => {
         <ChevronLeft size={18} />
       </Button>
 
-      <div className="text-center min-w-[180px]">
-        <p className="text-sm text-muted-foreground">
-          {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
-        </p>
-        {isCurrentWeek && (
-          <span className="text-xs text-primary font-medium">This Week</span>
-        )}
-      </div>
+      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            className="min-w-[180px] h-auto py-1 px-3 hover:bg-secondary/50"
+          >
+            <div className="text-center flex flex-col items-center gap-0.5">
+              <div className="flex items-center gap-2">
+                <CalendarIcon size={14} className="text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
+                </span>
+              </div>
+              {isCurrentWeek && (
+                <span className="text-xs text-primary font-medium">This Week</span>
+              )}
+            </div>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="center">
+          <Calendar
+            mode="single"
+            selected={weekStart}
+            onSelect={handleDateSelect}
+            disabled={(date) => isAfter(startOfWeek(date, { weekStartsOn: 1 }), currentWeekStart)}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
 
       <Button
         variant="ghost"
