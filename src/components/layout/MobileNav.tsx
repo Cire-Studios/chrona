@@ -15,7 +15,6 @@ import {
   Layers,
   FileText,
   TrendingUp,
-  Briefcase,
   LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,7 +32,6 @@ const navItems: NavItem[] = [
   { path: "/quarterly", label: "Quarterly Distillation", icon: Layers },
   { path: "/artifacts", label: "Artifacts", icon: FileText },
   { path: "/timeline", label: "Timeline", icon: TrendingUp },
-  { path: "/roles", label: "Manage Roles", icon: Briefcase },
 ];
 
 export const MobileNav = () => {

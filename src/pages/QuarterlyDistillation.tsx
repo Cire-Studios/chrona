@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
 import { QuarterSelector } from "@/components/quarterly/QuarterSelector";
 import { PatternCard } from "@/components/quarterly/PatternCard";
 import { PatternCategory } from "@/components/quarterly/PatternCategoryBadge";
@@ -407,6 +408,7 @@ const QuarterlyDistillation = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
+      <StickyRoleSelector />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
@@ -421,16 +423,6 @@ const QuarterlyDistillation = () => {
               <span className="text-sm font-medium uppercase tracking-wider">
                 Quarterly Distillation
               </span>
-              {activeRole && (
-                <>
-                  <span className="text-border">•</span>
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: activeRole.color }}
-                  />
-                  <span className="text-sm">{activeRole.title}</span>
-                </>
-              )}
             </div>
             <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
               Patterns & Trajectory
