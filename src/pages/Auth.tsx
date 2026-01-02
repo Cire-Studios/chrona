@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, KeyRound, CheckCircle } from "lucide-react";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -25,7 +26,7 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-type AuthStep = "form" | "magic-link-sent" | "password-setup";
+type AuthStep = "form" | "magic-link-sent" | "password-setup" | "forgot-password" | "reset-link-sent" | "reset-password";
 
 const Auth = () => {
   const { 
@@ -51,15 +52,26 @@ const Auth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<AuthStep>("form");
 
+  // Check for password recovery event (user clicked reset link in email)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setStep("reset-password");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Show password setup if user is logged in but needs to set password
   useEffect(() => {
-    if (user && needsPasswordSetup && step !== "password-setup") {
+    if (user && needsPasswordSetup && step !== "password-setup" && step !== "reset-password") {
       setStep("password-setup");
     }
   }, [user, needsPasswordSetup, step]);
 
-  // Redirect if already logged in and doesn't need password setup
-  if (user && !loading && !needsPasswordSetup) {
+  // Redirect if already logged in and doesn't need password setup (and not resetting password)
+  if (user && !loading && !needsPasswordSetup && step !== "reset-password") {
     const from = location.state?.from?.pathname || "/journal";
     return <Navigate to={from} replace />;
   }
@@ -138,6 +150,67 @@ const Auth = () => {
         setError(error.message);
         return;
       }
+      navigate("/journal");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const emailValidation = z.string().email("Please enter a valid email address");
+    const result = emailValidation.safeParse(email);
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      setStep("reset-link-sent");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const result = passwordSchema.safeParse({ password: passwordValue, confirmPassword });
+    if (!result.success) {
+      setError(result.error.errors[0].message);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordValue });
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      
+      // Update profile to mark password as set
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ has_password: true })
+          .eq("user_id", user.id);
+      }
+      
+      setNeedsPasswordSetup(false);
       navigate("/journal");
     } finally {
       setIsSubmitting(false);
@@ -300,6 +373,210 @@ const Auth = () => {
                 </button>
               </div>
             </div>
+          ) : step === "forgot-password" ? (
+            // Forgot Password Step
+            <div className="opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+                  <KeyRound className="w-8 h-8 text-primary" />
+                </div>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+                  Reset your password
+                </h1>
+                <p className="text-muted-foreground">
+                  Enter your email and we'll send you a link to reset your password.
+                </p>
+              </div>
+
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={cn(
+                      "w-full pl-12 pr-4 py-3.5 rounded-xl",
+                      "bg-secondary/30 border border-border/50",
+                      "text-foreground placeholder:text-muted-foreground/50",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                      "transition-all duration-300"
+                    )}
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="xl"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="animate-pulse">Sending...</span>
+                  ) : (
+                    <>
+                      Send Reset Link
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => {
+                    setStep("form");
+                    setError("");
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto"
+                >
+                  <ArrowLeft size={16} />
+                  Back to sign in
+                </button>
+              </div>
+            </div>
+          ) : step === "reset-link-sent" ? (
+            // Reset Link Sent Step
+            <div className="text-center opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+                <CheckCircle className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+                Check your email
+              </h1>
+              <p className="text-muted-foreground mb-6">
+                We sent a password reset link to <span className="text-foreground font-medium">{email}</span>
+              </p>
+              <p className="text-sm text-muted-foreground mb-8">
+                Click the link in the email to reset your password.
+              </p>
+
+              <div className="flex items-center justify-center gap-4 text-sm">
+                <button
+                  onClick={() => {
+                    setStep("form");
+                    setError("");
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft size={16} />
+                  Back to sign in
+                </button>
+                <span className="text-muted-foreground/50">|</span>
+                <button
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/auth`,
+                    });
+                    setIsSubmitting(false);
+                    if (error) {
+                      setError(error.message);
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="text-primary hover:underline"
+                >
+                  Resend email
+                </button>
+              </div>
+            </div>
+          ) : step === "reset-password" ? (
+            // Reset Password Step (after clicking link in email)
+            <div className="opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
+                  <KeyRound className="w-8 h-8 text-primary" />
+                </div>
+                <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
+                  Create new password
+                </h1>
+                <p className="text-muted-foreground">
+                  Enter your new password below.
+                </p>
+              </div>
+
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="New password (min 8 characters)"
+                    value={passwordValue}
+                    onChange={(e) => setPasswordValue(e.target.value)}
+                    className={cn(
+                      "w-full pl-12 pr-12 py-3.5 rounded-xl",
+                      "bg-secondary/30 border border-border/50",
+                      "text-foreground placeholder:text-muted-foreground/50",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                      "transition-all duration-300"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={cn(
+                      "w-full pl-12 pr-12 py-3.5 rounded-xl",
+                      "bg-secondary/30 border border-border/50",
+                      "text-foreground placeholder:text-muted-foreground/50",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                      "transition-all duration-300"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="hero"
+                  size="xl"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="animate-pulse">Resetting...</span>
+                  ) : (
+                    <>
+                      Reset Password
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </div>
           ) : (
             <>
               <div className="text-center mb-8 opacity-0 animate-fade-up" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
@@ -338,29 +615,43 @@ const Auth = () => {
 
                 {/* Password Input - only shown for login */}
                 {isLogin && (
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Password"
-                      value={passwordValue}
-                      onChange={(e) => setPasswordValue(e.target.value)}
-                      className={cn(
-                        "w-full pl-12 pr-12 py-3.5 rounded-xl",
-                        "bg-secondary/30 border border-border/50",
-                        "text-foreground placeholder:text-muted-foreground/50",
-                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
-                        "transition-all duration-300"
-                      )}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
+                  <>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={passwordValue}
+                        onChange={(e) => setPasswordValue(e.target.value)}
+                        className={cn(
+                          "w-full pl-12 pr-12 py-3.5 rounded-xl",
+                          "bg-secondary/30 border border-border/50",
+                          "text-foreground placeholder:text-muted-foreground/50",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50",
+                          "transition-all duration-300"
+                        )}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep("forgot-password");
+                          setError("");
+                        }}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  </>
                 )}
 
                 {/* Error Message */}
