@@ -49,6 +49,51 @@ export type Database = {
           },
         ]
       }
+      entry_signals: {
+        Row: {
+          context: string | null
+          created_at: string
+          entry_id: string
+          id: string
+          reflection_id: string
+          signal_flag: Database["public"]["Enums"]["signal_flag"]
+          user_id: string
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          entry_id: string
+          id?: string
+          reflection_id: string
+          signal_flag: Database["public"]["Enums"]["signal_flag"]
+          user_id: string
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          entry_id?: string
+          id?: string
+          reflection_id?: string
+          signal_flag?: Database["public"]["Enums"]["signal_flag"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_signals_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_signals_reflection_id_fkey"
+            columns: ["reflection_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_reflections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           accomplishments: string | null
@@ -203,6 +248,39 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_reflections: {
+        Row: {
+          created_at: string
+          id: string
+          role_id: string
+          summary: string | null
+          updated_at: string
+          user_id: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role_id: string
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+          week_end_date: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role_id?: string
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+          week_end_date?: string
+          week_start_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -211,7 +289,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      signal_flag: "delivery" | "ownership" | "influence" | "learning"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -338,6 +416,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      signal_flag: ["delivery", "ownership", "influence", "learning"],
+    },
   },
 } as const
