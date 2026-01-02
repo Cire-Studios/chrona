@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Logo } from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { PublicHeader } from "@/components/layout/PublicHeader";
+import { Footer } from "@/components/Footer";
 
 const Features = () => {
   const { user } = useAuth();
@@ -73,31 +74,10 @@ const Features = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-6 border-b border-border/50">
-        <Link to="/">
-          <Logo />
-        </Link>
-        <div className="flex items-center gap-4">
-          {user ? (
-            <Link to="/dashboard">
-              <Button variant="hero" size="sm">Dashboard</Button>
-            </Link>
-          ) : (
-            <>
-              <Link to="/auth">
-                <Button variant="ghost" size="sm">Sign In</Button>
-              </Link>
-              <Link to="/auth">
-                <Button variant="hero" size="sm">Get Started</Button>
-              </Link>
-            </>
-          )}
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background flex flex-col">
+      <PublicHeader />
 
-      <div className="max-w-6xl mx-auto px-6 py-16">
+      <div className="flex-1 max-w-6xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">
@@ -143,6 +123,8 @@ const Features = () => {
           </Link>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };
