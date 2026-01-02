@@ -8,11 +8,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, Loader2, Eye } from "lucide-react";
 import { ResumeRoleSelector } from "@/components/resume/ResumeRoleSelector";
 import { ResumeContentEditor } from "@/components/resume/ResumeContentEditor";
 import { ResumeProofSelector } from "@/components/resume/ResumeProofSelector";
 import { ResumePublishSettings } from "@/components/resume/ResumePublishSettings";
+import { ResumePreview } from "@/components/resume/ResumePreview";
 
 interface Role {
   id: string;
@@ -76,8 +77,10 @@ const ResumeBuilder = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
   const [patterns, setPatterns] = useState<Pattern[]>([]);
+  const [previewProofs, setPreviewProofs] = useState<any[]>([]);
   
   const [resumeData, setResumeData] = useState<ResumeData>({
     title: "My Resume",
@@ -368,6 +371,52 @@ const ResumeBuilder = () => {
     }
   };
 
+  const openPreview = async () => {
+    // Fetch proofs for preview
+    const allProofLinkIds = resumeData.approvedProofIds.proofLinkIds;
+    const allEntryImageIds = resumeData.approvedProofIds.entryImageIds;
+    
+    const proofs: any[] = [];
+    
+    if (allProofLinkIds.length > 0) {
+      const { data: proofLinks } = await supabase
+        .from("proof_links")
+        .select("*, journal_entries(role_id)")
+        .in("id", allProofLinkIds);
+      
+      (proofLinks || []).forEach((pl: any) => {
+        proofs.push({
+          id: pl.id,
+          type: "link",
+          title: pl.title,
+          url: pl.url,
+          linkType: pl.link_type,
+          roleId: pl.journal_entries?.role_id,
+        });
+      });
+    }
+    
+    if (allEntryImageIds.length > 0) {
+      const { data: entryImages } = await supabase
+        .from("entry_images")
+        .select("*, journal_entries(role_id)")
+        .in("id", allEntryImageIds);
+      
+      (entryImages || []).forEach((ei: any) => {
+        proofs.push({
+          id: ei.id,
+          type: "image",
+          url: ei.image_url,
+          caption: ei.caption,
+          roleId: ei.journal_entries?.role_id,
+        });
+      });
+    }
+    
+    setPreviewProofs(proofs);
+    setShowPreview(true);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -482,6 +531,10 @@ const ResumeBuilder = () => {
           </Button>
 
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => openPreview()}>
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
             <Button variant="outline" onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -507,6 +560,16 @@ const ResumeBuilder = () => {
           </div>
         </div>
       </main>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <ResumePreview
+          resumeData={resumeData}
+          roles={roles}
+          proofs={previewProofs}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 };
