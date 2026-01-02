@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Plus, Link2, Trash2, Github, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ProofLink } from "./JournalEntryForm";
+import type { ProofLinkData } from "@/pages/Journal";
 
 interface ProofLinksSectionProps {
-  links: ProofLink[];
-  onLinksChange: (links: ProofLink[]) => void;
+  links: ProofLinkData[];
+  onLinksChange: (links: ProofLinkData[]) => void;
 }
 
 const linkTypes = [
@@ -19,7 +19,7 @@ const linkTypes = [
 
 export const ProofLinksSection = ({ links, onLinksChange }: ProofLinksSectionProps) => {
   const [isAdding, setIsAdding] = useState(false);
-  const [newLink, setNewLink] = useState<Partial<ProofLink>>({
+  const [newLink, setNewLink] = useState<Partial<ProofLinkData>>({
     type: "github",
     url: "",
     title: "",
@@ -28,7 +28,7 @@ export const ProofLinksSection = ({ links, onLinksChange }: ProofLinksSectionPro
   const handleAddLink = () => {
     if (!newLink.url || !newLink.title) return;
 
-    const link: ProofLink = {
+    const link: ProofLinkData = {
       id: crypto.randomUUID(),
       type: newLink.type || "other",
       url: newLink.url,
@@ -44,7 +44,7 @@ export const ProofLinksSection = ({ links, onLinksChange }: ProofLinksSectionPro
     onLinksChange(links.filter((link) => link.id !== id));
   };
 
-  const getLinkIcon = (type: ProofLink["type"]) => {
+  const getLinkIcon = (type: ProofLinkData["type"]) => {
     const linkType = linkTypes.find((lt) => lt.id === type);
     return linkType?.icon || Link2;
   };
