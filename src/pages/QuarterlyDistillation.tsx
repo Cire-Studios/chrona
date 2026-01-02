@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { RoleSelector } from "@/components/roles/RoleSelector";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { QuarterSelector } from "@/components/quarterly/QuarterSelector";
 import { PatternCard } from "@/components/quarterly/PatternCard";
 import { PatternCategory } from "@/components/quarterly/PatternCategoryBadge";
-import { ArrowLeft, Save, CheckCircle, LogOut, Layers, Sparkles, Lock, AlertCircle } from "lucide-react";
+import { CheckCircle, Layers, Lock, AlertCircle, Sparkles } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,7 +39,7 @@ interface QuarterlyRecord {
 
 const QuarterlyDistillation = () => {
   const { toast } = useToast();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { activeRole, loading: rolesLoading } = useRoles();
 
   const [quarterStart, setQuarterStart] = useState(() =>
@@ -366,9 +365,6 @@ const QuarterlyDistillation = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   const confirmedCount = patterns.filter((p) => p.is_confirmed).length;
   const isFinalized = record?.status === "finalized";
@@ -385,53 +381,32 @@ const QuarterlyDistillation = () => {
     );
   }
 
+  const finalizeButton = !isFinalized && confirmedCount > 0 ? (
+    <Button
+      variant={isSaved ? "outline" : "hero"}
+      onClick={handleFinalize}
+      disabled={isSaving}
+      className="min-w-[100px]"
+    >
+      {isSaving ? (
+        <span className="animate-pulse">Finalizing...</span>
+      ) : isSaved ? (
+        <>
+          <CheckCircle size={18} />
+          Finalized
+        </>
+      ) : (
+        <>
+          <Lock size={18} />
+          Finalize
+        </>
+      )}
+    </Button>
+  ) : null;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/weekly">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
-            <Logo size="sm" />
-          </div>
-
-          <div className="flex-1 flex justify-center">
-            <RoleSelector />
-          </div>
-
-          <div className="flex items-center gap-2">
-            {!isFinalized && confirmedCount > 0 && (
-              <Button
-                variant={isSaved ? "outline" : "hero"}
-                onClick={handleFinalize}
-                disabled={isSaving}
-                className="min-w-[120px]"
-              >
-                {isSaving ? (
-                  <span className="animate-pulse">Finalizing...</span>
-                ) : isSaved ? (
-                  <>
-                    <CheckCircle size={18} />
-                    Finalized
-                  </>
-                ) : (
-                  <>
-                    <Lock size={18} />
-                    Finalize
-                  </>
-                )}
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut size={18} />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader rightContent={finalizeButton} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">

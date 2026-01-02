@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
-import { RoleSelector } from "@/components/roles/RoleSelector";
-import { ArrowLeft, Calendar, Save, CheckCircle, LogOut, Sparkles, LayoutDashboard } from "lucide-react";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { Calendar, Save, CheckCircle } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +35,7 @@ export interface ImageFileData {
 
 const Journal = () => {
   const { toast } = useToast();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { activeRole, loading: rolesLoading } = useRoles();
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -226,9 +225,6 @@ const Journal = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   // Redirect to auth if not logged in
   if (!authLoading && !user) {
@@ -243,63 +239,32 @@ const Journal = () => {
     );
   }
 
+  const saveButton = (
+    <Button
+      variant={isSaved ? "outline" : "hero"}
+      onClick={handleSave}
+      disabled={isSaving || !activeRole}
+      className="min-w-[120px]"
+    >
+      {isSaving ? (
+        <span className="animate-pulse">Saving...</span>
+      ) : isSaved ? (
+        <>
+          <CheckCircle size={18} />
+          Saved
+        </>
+      ) : (
+        <>
+          <Save size={18} />
+          Save Entry
+        </>
+      )}
+    </Button>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
-            <Logo size="sm" />
-          </div>
-
-          <div className="flex-1 flex justify-center">
-            <RoleSelector />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-                <LayoutDashboard size={16} />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Button>
-            </Link>
-            <Link to="/weekly">
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-                <Sparkles size={16} />
-                <span className="hidden sm:inline">Weekly</span>
-              </Button>
-            </Link>
-            <Button
-              variant={isSaved ? "outline" : "hero"}
-              onClick={handleSave}
-              disabled={isSaving || !activeRole}
-              className="min-w-[120px]"
-            >
-              {isSaving ? (
-                <span className="animate-pulse">Saving...</span>
-              ) : isSaved ? (
-                <>
-                  <CheckCircle size={18} />
-                  Saved
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Save Entry
-                </>
-              )}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut size={18} />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader rightContent={saveButton} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">

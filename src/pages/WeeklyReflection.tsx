@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { RoleSelector } from "@/components/roles/RoleSelector";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { WeekSelector } from "@/components/weekly/WeekSelector";
 import { WeeklyEntryCard } from "@/components/weekly/WeeklyEntryCard";
 import { SignalFlag, SignalFlagBadge } from "@/components/weekly/SignalFlagBadge";
-import { ArrowLeft, Save, CheckCircle, LogOut, Calendar, Sparkles, Layers } from "lucide-react";
+import { Save, CheckCircle, Calendar, Sparkles } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,7 +32,7 @@ interface SelectedEntryState {
 
 const WeeklyReflection = () => {
   const { toast } = useToast();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { activeRole, loading: rolesLoading } = useRoles();
   
   const [weekStart, setWeekStart] = useState(() => 
@@ -247,9 +246,6 @@ const WeeklyReflection = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   // Calculate summary stats
   const selectedCount = Object.keys(selectedEntries).length;
@@ -271,57 +267,32 @@ const WeeklyReflection = () => {
     );
   }
 
+  const saveButton = (
+    <Button
+      variant={isSaved ? "outline" : "hero"}
+      onClick={handleSave}
+      disabled={isSaving || !activeRole || selectedCount === 0}
+      className="min-w-[100px]"
+    >
+      {isSaving ? (
+        <span className="animate-pulse">Saving...</span>
+      ) : isSaved ? (
+        <>
+          <CheckCircle size={18} />
+          Saved
+        </>
+      ) : (
+        <>
+          <Save size={18} />
+          Save
+        </>
+      )}
+    </Button>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/journal">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
-            <Logo size="sm" />
-          </div>
-
-          <div className="flex-1 flex justify-center">
-            <RoleSelector />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link to="/quarterly">
-              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-                <Layers size={16} />
-                <span className="hidden sm:inline">Quarterly</span>
-              </Button>
-            </Link>
-            <Button
-              variant={isSaved ? "outline" : "hero"}
-              onClick={handleSave}
-              disabled={isSaving || !activeRole || selectedCount === 0}
-              className="min-w-[120px]"
-            >
-              {isSaving ? (
-                <span className="animate-pulse">Saving...</span>
-              ) : isSaved ? (
-                <>
-                  <CheckCircle size={18} />
-                  Saved
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Save
-                </>
-              )}
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut size={18} />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader rightContent={saveButton} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
