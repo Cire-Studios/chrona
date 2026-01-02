@@ -3,11 +3,11 @@ import { ImagePlus, X, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import type { ImageFile } from "./JournalEntryForm";
+import type { ImageFileData } from "@/pages/Journal";
 
 interface ImageUploadSectionProps {
-  images: ImageFile[];
-  onImagesChange: (images: ImageFile[]) => void;
+  images: ImageFileData[];
+  onImagesChange: (images: ImageFileData[]) => void;
   maxImages: number;
 }
 
@@ -31,7 +31,7 @@ export const ImageUploadSection = ({
       return;
     }
 
-    const newImages: ImageFile[] = files.map((file) => ({
+    const newImages: ImageFileData[] = files.map((file) => ({
       id: crypto.randomUUID(),
       file,
       preview: URL.createObjectURL(file),
@@ -48,7 +48,7 @@ export const ImageUploadSection = ({
 
   const handleRemoveImage = (id: string) => {
     const image = images.find((img) => img.id === id);
-    if (image) {
+    if (image && image.file) {
       URL.revokeObjectURL(image.preview);
     }
     onImagesChange(images.filter((img) => img.id !== id));
