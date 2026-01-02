@@ -1,6 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
 import { startOfQuarter, endOfQuarter, addQuarters, subQuarters, format, isAfter } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface QuarterSelectorProps {
   quarterStart: Date;
@@ -8,6 +16,7 @@ interface QuarterSelectorProps {
 }
 
 export const QuarterSelector = ({ quarterStart, onChange }: QuarterSelectorProps) => {
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const quarterEnd = endOfQuarter(quarterStart);
   const currentQuarterStart = startOfQuarter(new Date());
   const isCurrentQuarter = quarterStart.getTime() === currentQuarterStart.getTime();
@@ -26,6 +35,17 @@ export const QuarterSelector = ({ quarterStart, onChange }: QuarterSelectorProps
     }
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const newQuarterStart = startOfQuarter(date);
+      // Don't allow future quarters
+      if (!isAfter(newQuarterStart, currentQuarterStart)) {
+        onChange(newQuarterStart);
+      }
+    }
+    setCalendarOpen(false);
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Button
@@ -37,17 +57,39 @@ export const QuarterSelector = ({ quarterStart, onChange }: QuarterSelectorProps
         <ChevronLeft size={18} />
       </Button>
 
-      <div className="text-center min-w-[160px]">
-        <p className="font-medium text-foreground">
-          Q{quarterNumber} {year}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {format(quarterStart, "MMM d")} – {format(quarterEnd, "MMM d")}
-        </p>
-        {isCurrentQuarter && (
-          <span className="text-xs text-primary font-medium">Current Quarter</span>
-        )}
-      </div>
+      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            className="min-w-[160px] h-auto py-1 px-3 hover:bg-secondary/50"
+          >
+            <div className="text-center flex flex-col items-center gap-0.5">
+              <div className="flex items-center gap-2">
+                <CalendarIcon size={14} className="text-muted-foreground" />
+                <span className="font-medium text-foreground">
+                  Q{quarterNumber} {year}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {format(quarterStart, "MMM d")} – {format(quarterEnd, "MMM d")}
+              </span>
+              {isCurrentQuarter && (
+                <span className="text-xs text-primary font-medium">Current Quarter</span>
+              )}
+            </div>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="center">
+          <Calendar
+            mode="single"
+            selected={quarterStart}
+            onSelect={handleDateSelect}
+            disabled={(date) => isAfter(startOfQuarter(date), currentQuarterStart)}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
 
       <Button
         variant="ghost"
