@@ -36,9 +36,9 @@ const Pricing = () => {
     {
       name: "Chronicler",
       description: "For professionals serious about career growth",
-      price: "$9",
+      price: "$7",
       period: "per month",
-      yearlyPrice: "$90/year (save 17%)",
+      yearlyPrice: "$72/year (save 14%)",
       features: [
         "Unlimited roles",
         "50 AI artifact generations/month",
