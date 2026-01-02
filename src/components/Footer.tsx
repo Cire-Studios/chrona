@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Logo } from "./Logo";
 
 export const Footer = () => {
@@ -8,14 +9,23 @@ export const Footer = () => {
           <Logo size="sm" />
           
           <nav className="flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">About</a>
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
           </nav>
           
           <p className="text-sm text-muted-foreground">
-            © 2024 Chrona. All rights reserved.
+            © 2025 Chrona. A{" "}
+            <a 
+              href="https://www.cirestudios.dev/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              Cire Studios
+            </a>
+            {" "}project.
           </p>
         </div>
       </div>
