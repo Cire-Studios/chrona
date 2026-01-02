@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
 import { WeekSelector } from "@/components/weekly/WeekSelector";
 import { WeeklyEntryCard } from "@/components/weekly/WeeklyEntryCard";
 import { SignalFlag, SignalFlagBadge } from "@/components/weekly/SignalFlagBadge";
@@ -293,6 +294,7 @@ const WeeklyReflection = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
+      <StickyRoleSelector />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
@@ -307,16 +309,6 @@ const WeeklyReflection = () => {
               <span className="text-sm font-medium uppercase tracking-wider">
                 Weekly Reflection
               </span>
-              {activeRole && (
-                <>
-                  <span className="text-border">•</span>
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: activeRole.color }}
-                  />
-                  <span className="text-sm">{activeRole.title}</span>
-                </>
-              )}
             </div>
             <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
               What Mattered This Week?

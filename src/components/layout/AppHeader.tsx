@@ -9,7 +9,6 @@ import {
   Layers,
   FileText,
   TrendingUp,
-  Briefcase,
   LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +25,6 @@ const navItems: NavItem[] = [
   { path: "/quarterly", label: "Quarterly", icon: Layers },
   { path: "/artifacts", label: "Artifacts", icon: FileText },
   { path: "/timeline", label: "Timeline", icon: TrendingUp },
-  { path: "/roles", label: "Roles", icon: Briefcase },
 ];
 
 export const AppHeader = () => {

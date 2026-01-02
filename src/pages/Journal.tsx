@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
 import { PastEntriesList } from "@/components/journal/PastEntriesList";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
 import { Calendar, Save, CheckCircle, History, PenLine } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -338,6 +339,7 @@ const Journal = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
+      <StickyRoleSelector />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
@@ -367,16 +369,6 @@ const Journal = () => {
                   <span className="text-sm font-medium uppercase tracking-wider">
                     Daily Capture
                   </span>
-                  {activeRole && (
-                    <>
-                      <span className="text-border">•</span>
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: activeRole.color }}
-                      />
-                      <span className="text-sm">{activeRole.title}</span>
-                    </>
-                  )}
                 </div>
                 <h1 className="font-serif text-3xl md:text-4xl font-bold">{today}</h1>
               </div>
