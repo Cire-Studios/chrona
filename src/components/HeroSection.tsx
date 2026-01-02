@@ -2,8 +2,11 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { Logo } from "./Logo";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const HeroSection = () => {
+  const { user } = useAuth();
+
   return (
     <section className="relative min-h-screen flex flex-col">
       {/* Background effects */}
@@ -14,13 +17,32 @@ export const HeroSection = () => {
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-6">
         <Logo />
+        <div className="hidden md:flex items-center gap-6 text-sm">
+          <Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">
+            Features
+          </Link>
+          <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+            How It Works
+          </Link>
+          <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
+            Pricing
+          </Link>
+        </div>
         <div className="flex items-center gap-4">
-          <Link to="/auth">
-            <Button variant="ghost" size="sm">Sign In</Button>
-          </Link>
-          <Link to="/dashboard">
-            <Button variant="hero" size="sm">Get Started</Button>
-          </Link>
+          {user ? (
+            <Link to="/dashboard">
+              <Button variant="hero" size="sm">Dashboard</Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth">
+                <Button variant="ghost" size="sm">Sign In</Button>
+              </Link>
+              <Link to="/auth">
+                <Button variant="hero" size="sm">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -44,15 +66,17 @@ export const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 opacity-0 animate-fade-up" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
-            <Link to="/journal">
+            <Link to={user ? "/journal" : "/auth"}>
               <Button variant="hero" size="xl">
                 Start Journaling
                 <ArrowRight size={20} />
               </Button>
             </Link>
-            <Button variant="hero-secondary" size="xl">
-              See How It Works
-            </Button>
+            <Link to="/how-it-works">
+              <Button variant="hero-secondary" size="xl">
+                See How It Works
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

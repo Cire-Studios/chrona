@@ -16,6 +16,9 @@ import WeeklyReflection from "./pages/WeeklyReflection";
 import QuarterlyDistillation from "./pages/QuarterlyDistillation";
 import Artifacts from "./pages/Artifacts";
 import Roles from "./pages/Roles";
+import Pricing from "./pages/Pricing";
+import Features from "./pages/Features";
+import HowItWorks from "./pages/HowItWorks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +43,9 @@ const App = () => (
                 <Route path="/roles" element={<Roles />} />
                 <Route path="/timeline" element={<Timeline />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
