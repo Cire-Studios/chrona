@@ -56,11 +56,13 @@ interface EditingRole {
 
 const Roles = () => {
   const { user, loading: authLoading } = useAuth();
-  const { roles, activeRole, setActiveRole, updateRole, deleteRole, loading: rolesLoading } = useRoles();
+  const { roles, activeRole, setActiveRole, updateRole, deleteRole, archiveRole, canDeleteRole, loading: rolesLoading } = useRoles();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingRole, setEditingRole] = useState<EditingRole | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [canDeleteConfirmRole, setCanDeleteConfirmRole] = useState(false);
+  const [checkingDelete, setCheckingDelete] = useState(false);
 
   if (!authLoading && !user) {
     return <Navigate to="/auth" replace />;
@@ -109,16 +111,28 @@ const Roles = () => {
   };
 
   const handleArchive = async (role: Role) => {
-    await updateRole(role.id, { is_active: false });
+    await archiveRole(role.id);
   };
 
   const handleRestore = async (role: Role) => {
     await updateRole(role.id, { is_active: true });
   };
 
+  const handleDeleteClick = async (roleId: string) => {
+    setCheckingDelete(true);
+    setDeleteConfirmId(roleId);
+    const canDelete = await canDeleteRole(roleId);
+    setCanDeleteConfirmRole(canDelete);
+    setCheckingDelete(false);
+  };
+
   const handleDelete = async () => {
     if (!deleteConfirmId) return;
-    await deleteRole(deleteConfirmId);
+    if (canDeleteConfirmRole) {
+      await deleteRole(deleteConfirmId);
+    } else {
+      await archiveRole(deleteConfirmId);
+    }
     setDeleteConfirmId(null);
   };
 
@@ -324,7 +338,7 @@ const Roles = () => {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => setDeleteConfirmId(role.id)}
+              onClick={() => handleDeleteClick(role.id)}
             >
               <Trash2 size={14} />
             </Button>
@@ -416,20 +430,33 @@ const Roles = () => {
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Role</AlertDialogTitle>
+            <AlertDialogTitle>
+              {checkingDelete ? "Checking..." : canDeleteConfirmRole ? "Delete Role" : "Archive Role"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{roleToDelete?.title}"? This will permanently remove
-              the role and all associated journal entries, weekly reflections, and quarterly patterns.
-              This action cannot be undone.
+              {checkingDelete ? (
+                "Checking if role can be deleted..."
+              ) : canDeleteConfirmRole ? (
+                <>
+                  Are you sure you want to delete "{roleToDelete?.title}"? This will permanently remove
+                  the role. This action cannot be undone.
+                </>
+              ) : (
+                <>
+                  The role "{roleToDelete?.title}" has associated data (journal entries, reflections, or patterns) 
+                  and cannot be deleted. Would you like to archive it instead? Archived roles can be restored later.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={checkingDelete}
+              className={canDeleteConfirmRole ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >
-              Delete
+              {canDeleteConfirmRole ? "Delete" : "Archive"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

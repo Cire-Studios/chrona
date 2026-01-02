@@ -25,6 +25,8 @@ interface RolesContextType {
   createRole: (role: Omit<Role, "id" | "user_id" | "created_at" | "updated_at">) => Promise<Role | null>;
   updateRole: (id: string, updates: Partial<Role>) => Promise<void>;
   deleteRole: (id: string) => Promise<void>;
+  archiveRole: (id: string) => Promise<void>;
+  canDeleteRole: (id: string) => Promise<boolean>;
   refreshRoles: () => Promise<void>;
 }
 
@@ -144,8 +146,85 @@ export const RolesProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const canDeleteRole = async (id: string): Promise<boolean> => {
+    try {
+      // Check if role has any journal entries
+      const { count: entriesCount } = await supabase
+        .from("journal_entries")
+        .select("id", { count: "exact", head: true })
+        .eq("role_id", id);
+
+      if (entriesCount && entriesCount > 0) return false;
+
+      // Check if role has any weekly reflections
+      const { count: reflectionsCount } = await supabase
+        .from("weekly_reflections")
+        .select("id", { count: "exact", head: true })
+        .eq("role_id", id);
+
+      if (reflectionsCount && reflectionsCount > 0) return false;
+
+      // Check if role has any quarterly records
+      const { count: recordsCount } = await supabase
+        .from("quarterly_records")
+        .select("id", { count: "exact", head: true })
+        .eq("role_id", id);
+
+      if (recordsCount && recordsCount > 0) return false;
+
+      return true;
+    } catch (error) {
+      console.error("Error checking role data:", error);
+      return false;
+    }
+  };
+
+  const archiveRole = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("roles")
+        .update({ is_active: false })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setRoles((prev) =>
+        prev.map((role) => (role.id === id ? { ...role, is_active: false } : role))
+      );
+
+      if (activeRole?.id === id) {
+        const remaining = roles.filter((r) => r.id !== id && r.is_active);
+        setActiveRole(remaining[0] || null);
+      }
+
+      toast({
+        title: "Role archived",
+        description: "The role has been archived and can be restored later.",
+      });
+    } catch (error) {
+      console.error("Error archiving role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to archive role. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const deleteRole = async (id: string) => {
     try {
+      // First check if deletion is allowed
+      const canDelete = await canDeleteRole(id);
+      
+      if (!canDelete) {
+        toast({
+          title: "Cannot delete role",
+          description: "This role has associated data. Archive it instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase.from("roles").delete().eq("id", id);
 
       if (error) throw error;
@@ -159,7 +238,7 @@ export const RolesProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "Role deleted",
-        description: "The role has been removed from your career roles.",
+        description: "The role has been permanently removed.",
       });
     } catch (error) {
       console.error("Error deleting role:", error);
@@ -185,6 +264,8 @@ export const RolesProvider = ({ children }: { children: ReactNode }) => {
         createRole,
         updateRole,
         deleteRole,
+        archiveRole,
+        canDeleteRole,
         refreshRoles,
       }}
     >

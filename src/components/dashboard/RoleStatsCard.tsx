@@ -1,6 +1,10 @@
+import { Link } from "react-router-dom";
 import { Role } from "@/contexts/RolesContext";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Flag, TrendingUp, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Flag, TrendingUp, Calendar, PenLine } from "lucide-react";
+import { RoleNotificationPopover } from "./RoleNotificationPopover";
+import { format } from "date-fns";
 
 interface RoleStats {
   role: Role;
@@ -12,10 +16,11 @@ interface RoleStats {
 
 interface RoleStatsCardProps {
   stats: RoleStats;
+  userId?: string;
   onClick?: () => void;
 }
 
-export const RoleStatsCard = ({ stats, onClick }: RoleStatsCardProps) => {
+export const RoleStatsCard = ({ stats, userId, onClick }: RoleStatsCardProps) => {
   const { role, entryCount, signalCount, patternCount, lastEntryDate } = stats;
 
   const formatDate = (dateStr: string | null) => {
@@ -30,11 +35,19 @@ export const RoleStatsCard = ({ stats, onClick }: RoleStatsCardProps) => {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const hasEntryToday = lastEntryDate === todayStr;
+
   return (
     <Card 
-      className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/30 bg-card/50 backdrop-blur-sm"
+      className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/30 bg-card/50 backdrop-blur-sm relative overflow-hidden"
       onClick={onClick}
     >
+      {/* Notification Icon */}
+      {userId && (
+        <RoleNotificationPopover roleId={role.id} userId={userId} />
+      )}
+
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -84,6 +97,30 @@ export const RoleStatsCard = ({ stats, onClick }: RoleStatsCardProps) => {
           </div>
         </div>
       </CardContent>
+
+      {/* CTA Overlay for missing today's entry */}
+      {role.is_active && !hasEntryToday && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-primary/90 to-primary/70 px-4 py-3">
+          <div 
+            className="flex items-center justify-between"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-sm font-medium text-primary-foreground">
+              No entry logged today
+            </span>
+            <Link to="/journal">
+              <Button 
+                size="sm" 
+                variant="secondary"
+                className="gap-1.5 h-7 text-xs"
+              >
+                <PenLine size={12} />
+                Log Entry
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

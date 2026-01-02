@@ -217,7 +217,7 @@ const Dashboard = () => {
                     to="/journal"
                     onClick={() => handleRoleClick(stats.role)}
                   >
-                    <RoleStatsCard stats={stats} />
+                    <RoleStatsCard stats={stats} userId={user?.id} />
                   </Link>
                 ))}
               </div>
