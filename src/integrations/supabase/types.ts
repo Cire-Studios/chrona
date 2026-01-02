@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      artifact_usage: {
+        Row: {
+          created_at: string
+          id: string
+          role_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artifact_usage_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_images: {
         Row: {
           caption: string | null
@@ -448,6 +477,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          tier: Database["public"]["Enums"]["user_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          tier?: Database["public"]["Enums"]["user_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          tier?: Database["public"]["Enums"]["user_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_reflections: {
         Row: {
           created_at: string
@@ -497,6 +565,7 @@ export type Database = {
         | "leadership"
         | "collaboration"
       signal_flag: "delivery" | "ownership" | "influence" | "learning"
+      user_tier: "starter" | "chronicler"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -633,6 +702,7 @@ export const Constants = {
         "collaboration",
       ],
       signal_flag: ["delivery", "ownership", "influence", "learning"],
+      user_tier: ["starter", "chronicler"],
     },
   },
 } as const
