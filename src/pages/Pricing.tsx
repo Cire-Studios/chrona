@@ -53,6 +53,7 @@ const Pricing = () => {
         "Unlimited roles",
         "50 AI artifact generations/month",
         "Image uploads for proof of work",
+        "Verified Resume Builder with public sharing",
         "Everything in Starter",
         "Priority support",
       ],

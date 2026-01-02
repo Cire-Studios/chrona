@@ -8,10 +8,12 @@ import {
   Link as LinkIcon,
   Brain,
   Shield,
-  Clock
+  Clock,
+  Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -40,6 +42,12 @@ const Features = () => {
       icon: FileText,
       title: "AI Artifacts",
       description: "Transform your experiences into polished narratives, resume bullets, and performance review content with one click.",
+    },
+    {
+      icon: Crown,
+      title: "Verified Resume Builder",
+      description: "Generate professional resumes backed by proof. Share a public link so employers can see the evidence behind your achievements.",
+      chroniclerOnly: true,
     },
     {
       icon: TrendingUp,
@@ -95,9 +103,17 @@ const Features = () => {
             return (
               <Card 
                 key={feature.title} 
-                className="bg-gradient-card border-border/50 hover:border-primary/30 transition-all group"
+                className="bg-gradient-card border-border/50 hover:border-primary/30 transition-all group relative"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
+                {(feature as any).chroniclerOnly && (
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="default" className="text-xs">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Chronicler
+                    </Badge>
+                  </div>
+                )}
                 <CardHeader>
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
                     <Icon className="h-5 w-5 text-primary" />

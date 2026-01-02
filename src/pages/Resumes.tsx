@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, FileText, Globe, Lock, Trash2, Copy, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, FileText, Globe, Lock, Trash2, Copy, ExternalLink, Loader2, Crown } from "lucide-react";
 import { format } from "date-fns";
 
 interface Resume {
@@ -21,9 +22,12 @@ interface Resume {
 
 const Resumes = () => {
   const { user } = useAuth();
+  const { tier, openCheckout } = useSubscription();
   const navigate = useNavigate();
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isChronicler = tier === "chronicler";
 
   useEffect(() => {
     if (!user) return;
@@ -64,6 +68,29 @@ const Resumes = () => {
     await navigator.clipboard.writeText(url);
     toast.success("Link copied!");
   };
+
+  // Show upgrade prompt for Starter users
+  if (!isChronicler) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <Card className="text-center py-16">
+            <CardContent>
+              <Crown className="h-16 w-16 mx-auto mb-6 text-primary" />
+              <h2 className="text-2xl font-bold mb-2">Resume Builder is a Chronicler Feature</h2>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Create AI-powered resumes backed by verified achievements. Upgrade to Chronicler to unlock this feature.
+              </p>
+              <Button variant="hero" onClick={() => openCheckout("month")}>
+                Upgrade to Chronicler
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
