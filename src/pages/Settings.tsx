@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { NotificationSettingsCard } from "@/components/settings/NotificationSettingsCard";
+import { SubscriptionCard } from "@/components/settings/SubscriptionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,6 +118,9 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
+          {/* Subscription Card */}
+          <SubscriptionCard />
+          
           {/* Profile Card */}
           <Card className="bg-card/50 border-border/50">
             <CardHeader>

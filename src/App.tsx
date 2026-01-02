@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RolesProvider } from "@/contexts/RolesContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -24,24 +25,26 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <RolesProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/journal" element={<Journal />} />
-              <Route path="/weekly" element={<WeeklyReflection />} />
-              <Route path="/quarterly" element={<QuarterlyDistillation />} />
-              <Route path="/artifacts" element={<Artifacts />} />
-              <Route path="/roles" element={<Roles />} />
-              <Route path="/timeline" element={<Timeline />} />
-              <Route path="/settings" element={<Settings />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <SubscriptionProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/journal" element={<Journal />} />
+                <Route path="/weekly" element={<WeeklyReflection />} />
+                <Route path="/quarterly" element={<QuarterlyDistillation />} />
+                <Route path="/artifacts" element={<Artifacts />} />
+                <Route path="/roles" element={<Roles />} />
+                <Route path="/timeline" element={<Timeline />} />
+                <Route path="/settings" element={<Settings />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </SubscriptionProvider>
         </RolesProvider>
       </AuthProvider>
     </TooltipProvider>

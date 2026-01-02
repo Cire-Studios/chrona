@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TimeWindowSelector } from "@/components/artifacts/TimeWindowSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRoles } from "@/contexts/RolesContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -20,6 +21,8 @@ import {
   Copy, 
   Check,
   AlertCircle,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { format, parseISO, startOfQuarter, endOfQuarter } from "date-fns";
 
@@ -61,6 +64,7 @@ const Artifacts = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { activeRole, loading: rolesLoading } = useRoles();
+  const { canGenerateArtifact, remainingArtifacts, tier, recordArtifactUsage, openCheckout } = useSubscription();
   
   const [selectedRange, setSelectedRange] = useState<[Date, Date]>(() => {
     const now = new Date();
@@ -190,8 +194,26 @@ const Artifacts = () => {
   const handleGenerateArtifact = async () => {
     if (!activeRole || patterns.length === 0) return;
 
+    // Check tier limits
+    if (!canGenerateArtifact) {
+      toast.error(
+        tier === "starter" 
+          ? "You've used all 3 lifetime artifact generations. Upgrade to Chronicler for 50/month."
+          : "You've reached your monthly limit of 50 artifact generations."
+      );
+      return;
+    }
+
     setIsGenerating(true);
     try {
+      // Record usage first
+      const recorded = await recordArtifactUsage(activeRole.id);
+      if (!recorded) {
+        toast.error("Failed to record usage. Please try again.");
+        setIsGenerating(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-artifacts", {
         body: {
           patterns: patterns.map(p => ({
@@ -414,15 +436,45 @@ const Artifacts = () => {
                       ))}
                     </div>
                     
+                    {/* Usage indicator */}
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="text-xs text-muted-foreground">
+                        {tier === "starter" ? (
+                          <span className="flex items-center gap-1">
+                            <Lock size={12} />
+                            {remainingArtifacts} of 3 lifetime generations remaining
+                          </span>
+                        ) : (
+                          <span>{remainingArtifacts} of 50 generations remaining this month</span>
+                        )}
+                      </div>
+                      {tier === "starter" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs gap-1"
+                          onClick={() => openCheckout("month")}
+                        >
+                          <Crown size={12} className="text-amber-500" />
+                          Upgrade
+                        </Button>
+                      )}
+                    </div>
+                    
                     <Button
-                      className="mt-4 gap-2"
+                      className="mt-2 gap-2"
                       onClick={handleGenerateArtifact}
-                      disabled={isGenerating}
+                      disabled={isGenerating || !canGenerateArtifact}
                     >
                       {isGenerating ? (
                         <>
                           <Loader2 className="animate-spin" size={16} />
                           Generating {artifactTypeInfo[selectedType].label}...
+                        </>
+                      ) : !canGenerateArtifact ? (
+                        <>
+                          <Lock size={16} />
+                          Limit Reached
                         </>
                       ) : (
                         <>
