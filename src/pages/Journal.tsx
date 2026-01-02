@@ -139,6 +139,24 @@ const Journal = () => {
     loadExistingEntry();
   }, [user, activeRole, todayDate]);
 
+  const uploadImage = async (file: File, entryId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${user!.id}/${entryId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("entry-images")
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("entry-images")
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSave = async () => {
     if (!user || !activeRole) {
       toast({
@@ -204,6 +222,59 @@ const Journal = () => {
           );
 
           if (linksError) throw linksError;
+        }
+
+        // Handle images
+        // Get existing image IDs to determine what to keep/delete
+        const existingImageIds = entryData.images
+          .filter((img) => img.imageUrl && !img.file)
+          .map((img) => img.id);
+
+        // Delete images that are no longer in the list
+        const { data: currentImages } = await supabase
+          .from("entry_images")
+          .select("id, image_url")
+          .eq("entry_id", entryId);
+
+        if (currentImages) {
+          const imagesToDelete = currentImages.filter(
+            (img) => !existingImageIds.includes(img.id)
+          );
+
+          for (const img of imagesToDelete) {
+            // Delete from storage
+            const urlParts = img.image_url.split("/entry-images/");
+            if (urlParts[1]) {
+              await supabase.storage.from("entry-images").remove([urlParts[1]]);
+            }
+            // Delete from database
+            await supabase.from("entry_images").delete().eq("id", img.id);
+          }
+        }
+
+        // Upload new images
+        const newImages = entryData.images.filter((img) => img.file);
+        for (const img of newImages) {
+          if (img.file) {
+            const imageUrl = await uploadImage(img.file, entryId);
+
+            const { error: imgError } = await supabase.from("entry_images").insert({
+              entry_id: entryId,
+              user_id: user.id,
+              image_url: imageUrl,
+              caption: img.caption,
+            });
+
+            if (imgError) throw imgError;
+          }
+        }
+
+        // Update captions for existing images
+        for (const img of entryData.images.filter((i) => i.imageUrl && !i.file)) {
+          await supabase
+            .from("entry_images")
+            .update({ caption: img.caption })
+            .eq("id", img.id);
         }
       }
 
