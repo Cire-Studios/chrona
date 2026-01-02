@@ -141,6 +141,57 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          created_at: string
+          daily_reminder_enabled: boolean
+          daily_reminder_time: string
+          email_notifications_enabled: boolean
+          id: string
+          quarterly_reminder_day: number
+          quarterly_reminder_enabled: boolean
+          quarterly_reminder_time: string
+          timezone: string
+          updated_at: string
+          user_id: string
+          weekly_reminder_day: number
+          weekly_reminder_enabled: boolean
+          weekly_reminder_time: string
+        }
+        Insert: {
+          created_at?: string
+          daily_reminder_enabled?: boolean
+          daily_reminder_time?: string
+          email_notifications_enabled?: boolean
+          id?: string
+          quarterly_reminder_day?: number
+          quarterly_reminder_enabled?: boolean
+          quarterly_reminder_time?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          weekly_reminder_day?: number
+          weekly_reminder_enabled?: boolean
+          weekly_reminder_time?: string
+        }
+        Update: {
+          created_at?: string
+          daily_reminder_enabled?: boolean
+          daily_reminder_time?: string
+          email_notifications_enabled?: boolean
+          id?: string
+          quarterly_reminder_day?: number
+          quarterly_reminder_enabled?: boolean
+          quarterly_reminder_time?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          weekly_reminder_day?: number
+          weekly_reminder_enabled?: boolean
+          weekly_reminder_time?: string
+        }
+        Relationships: []
+      }
       pattern_evidence: {
         Row: {
           created_at: string
@@ -366,6 +417,33 @@ export type Database = {
           start_date?: string | null
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sent_reminders: {
+        Row: {
+          id: string
+          reminder_date: string
+          reminder_type: string
+          role_id: string | null
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reminder_date: string
+          reminder_type: string
+          role_id?: string | null
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reminder_date?: string
+          reminder_type?: string
+          role_id?: string | null
+          sent_at?: string
           user_id?: string
         }
         Relationships: []
