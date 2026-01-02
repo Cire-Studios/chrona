@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { NotificationSettingsCard } from "@/components/settings/NotificationSettingsCard";
@@ -20,12 +21,32 @@ interface Profile {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const { checkSubscription } = useSubscription();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile>({ display_name: null, email: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const hasHandledSuccess = useRef(false);
+
+  // Handle Stripe checkout success
+  useEffect(() => {
+    const subscriptionStatus = searchParams.get("subscription");
+    if (subscriptionStatus === "success" && !hasHandledSuccess.current) {
+      hasHandledSuccess.current = true;
+      // Immediately refresh subscription status
+      checkSubscription().then(() => {
+        toast({
+          title: "Welcome to Chronicler!",
+          description: "Your subscription is now active. Enjoy unlimited roles, image uploads, and more artifacts!",
+        });
+      });
+      // Remove the query param from URL
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, checkSubscription, toast]);
 
   useEffect(() => {
     if (!authLoading && !user) {
