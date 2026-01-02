@@ -3,7 +3,7 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
 import { RoleSelector } from "@/components/roles/RoleSelector";
-import { ArrowLeft, Calendar, Save, CheckCircle, LogOut, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, Save, CheckCircle, LogOut, Sparkles, LayoutDashboard } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -262,6 +262,12 @@ const Journal = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+                <LayoutDashboard size={16} />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Button>
+            </Link>
             <Link to="/weekly">
               <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
                 <Sparkles size={16} />

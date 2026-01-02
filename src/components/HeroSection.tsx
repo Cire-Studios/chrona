@@ -15,8 +15,10 @@ export const HeroSection = () => {
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-6">
         <Logo />
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm">Sign In</Button>
-          <Link to="/journal">
+          <Link to="/auth">
+            <Button variant="ghost" size="sm">Sign In</Button>
+          </Link>
+          <Link to="/dashboard">
             <Button variant="hero" size="sm">Get Started</Button>
           </Link>
         </div>

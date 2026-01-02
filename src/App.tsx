@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { RolesProvider } from "@/contexts/RolesContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 import Journal from "./pages/Journal";
 import WeeklyReflection from "./pages/WeeklyReflection";
 import QuarterlyDistillation from "./pages/QuarterlyDistillation";
@@ -25,6 +26,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/journal" element={<Journal />} />
               <Route path="/weekly" element={<WeeklyReflection />} />
               <Route path="/quarterly" element={<QuarterlyDistillation />} />
