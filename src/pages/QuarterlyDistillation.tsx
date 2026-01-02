@@ -54,7 +54,6 @@ const QuarterlyDistillation = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  const quarterEnd = endOfQuarter(quarterStart);
   const quarterNumber = Math.ceil((quarterStart.getMonth() + 1) / 3);
   const quarterLabel = `Q${quarterNumber} ${quarterStart.getFullYear()}`;
 
@@ -65,6 +64,7 @@ const QuarterlyDistillation = () => {
     setIsLoading(true);
 
     try {
+      const quarterEnd = endOfQuarter(quarterStart);
       const startDate = format(quarterStart, "yyyy-MM-dd");
       const endDate = format(quarterEnd, "yyyy-MM-dd");
 
@@ -169,7 +169,9 @@ const QuarterlyDistillation = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, activeRole, quarterStart, quarterEnd, toast]);
+  }, [user, activeRole, quarterStart, toast]);
+
+  const quarterEnd = endOfQuarter(quarterStart);
 
   useEffect(() => {
     loadQuarterData();
