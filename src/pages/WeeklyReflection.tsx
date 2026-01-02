@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { StickyRoleSelector } from "@/components/roles/StickyRoleSelector";
@@ -46,83 +46,99 @@ const WeeklyReflection = () => {
   const [existingReflectionId, setExistingReflectionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load entries for the selected week
-  const loadWeekEntries = useCallback(async () => {
-    if (!user || !activeRole) return;
-    
-    setIsLoading(true);
-    
-    try {
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-      const startDate = format(weekStart, "yyyy-MM-dd");
-      const endDate = format(weekEnd, "yyyy-MM-dd");
-
-      // Load journal entries for this week
-      const { data: entriesData, error: entriesError } = await supabase
-        .from("journal_entries")
-        .select("id, entry_date, accomplishments, decisions, challenges, learnings")
-        .eq("role_id", activeRole.id)
-        .gte("entry_date", startDate)
-        .lte("entry_date", endDate)
-        .order("entry_date", { ascending: true });
-
-      if (entriesError) throw entriesError;
-      setEntries(entriesData || []);
-
-      // Check for existing weekly reflection
-      const { data: reflectionData, error: reflectionError } = await supabase
-        .from("weekly_reflections")
-        .select("id")
-        .eq("role_id", activeRole.id)
-        .eq("week_start_date", startDate)
-        .maybeSingle();
-
-      if (reflectionError) throw reflectionError;
-
-      if (reflectionData) {
-        setExistingReflectionId(reflectionData.id);
-
-        // Load existing signals
-        const { data: signalsData, error: signalsError } = await supabase
-          .from("entry_signals")
-          .select("entry_id, signal_flag, context")
-          .eq("reflection_id", reflectionData.id);
-
-        if (signalsError) throw signalsError;
-
-        // Reconstruct selected entries state
-        const selectedState: SelectedEntryState = {};
-        signalsData?.forEach((signal) => {
-          if (!selectedState[signal.entry_id]) {
-            selectedState[signal.entry_id] = [];
-          }
-          selectedState[signal.entry_id].push({
-            signal_flag: signal.signal_flag as SignalFlag,
-            context: signal.context || "",
-          });
-        });
-        setSelectedEntries(selectedState);
-      } else {
-        setExistingReflectionId(null);
-        setSelectedEntries({});
-      }
-    } catch (error) {
-      console.error("Error loading week entries:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load entries for this week.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, activeRole, weekStart, toast]);
 
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
   useEffect(() => {
-    loadWeekEntries();
-  }, [loadWeekEntries]);
+    if (!user || !activeRole) {
+      setEntries([]);
+      setSelectedEntries({});
+      setExistingReflectionId(null);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const run = async () => {
+      setIsLoading(true);
+
+      try {
+        const localWeekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        const startDate = format(weekStart, "yyyy-MM-dd");
+        const endDate = format(localWeekEnd, "yyyy-MM-dd");
+
+        // Load journal entries for this week
+        const { data: entriesData, error: entriesError } = await supabase
+          .from("journal_entries")
+          .select("id, entry_date, accomplishments, decisions, challenges, learnings")
+          .eq("role_id", activeRole.id)
+          .gte("entry_date", startDate)
+          .lte("entry_date", endDate)
+          .order("entry_date", { ascending: true });
+
+        if (entriesError) throw entriesError;
+        if (cancelled) return;
+        setEntries(entriesData || []);
+
+        // Check for existing weekly reflection
+        const { data: reflectionData, error: reflectionError } = await supabase
+          .from("weekly_reflections")
+          .select("id")
+          .eq("role_id", activeRole.id)
+          .eq("week_start_date", startDate)
+          .maybeSingle();
+
+        if (reflectionError) throw reflectionError;
+        if (cancelled) return;
+
+        if (reflectionData) {
+          setExistingReflectionId(reflectionData.id);
+
+          // Load existing signals
+          const { data: signalsData, error: signalsError } = await supabase
+            .from("entry_signals")
+            .select("entry_id, signal_flag, context")
+            .eq("reflection_id", reflectionData.id);
+
+          if (signalsError) throw signalsError;
+          if (cancelled) return;
+
+          // Reconstruct selected entries state
+          const selectedState: SelectedEntryState = {};
+          signalsData?.forEach((signal) => {
+            if (!selectedState[signal.entry_id]) {
+              selectedState[signal.entry_id] = [];
+            }
+            selectedState[signal.entry_id].push({
+              signal_flag: signal.signal_flag as SignalFlag,
+              context: signal.context || "",
+            });
+          });
+          setSelectedEntries(selectedState);
+        } else {
+          setExistingReflectionId(null);
+          setSelectedEntries({});
+        }
+      } catch (error) {
+        console.error("Error loading week entries:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load entries for this week.",
+          variant: "destructive",
+        });
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, activeRole?.id, weekStart.getTime()]);
+
 
   const handleToggleSelect = (entryId: string) => {
     setSelectedEntries((prev) => {
