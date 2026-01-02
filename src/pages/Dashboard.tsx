@@ -163,17 +163,11 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (authLoading || rolesLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
-      </div>
-    );
-  }
+  const isLoading = authLoading || rolesLoading || loading;
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader showRoleSelector={false} />
+      <AppHeader />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-8">
@@ -190,7 +184,11 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {roles.length === 0 ? (
+      {isLoading ? (
+          <div className="flex items-center justify-center py-24">
+            <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+          </div>
+        ) : roles.length === 0 ? (
           <div className="text-center py-16 bg-secondary/20 rounded-2xl border border-border/50">
             <LayoutDashboard size={48} className="mx-auto mb-4 text-muted-foreground/50" />
             <h2 className="text-xl font-semibold mb-2">No Roles Yet</h2>

@@ -336,7 +336,7 @@ const Roles = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader showRoleSelector={false} />
+      <AppHeader />
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
