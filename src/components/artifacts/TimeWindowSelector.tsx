@@ -7,7 +7,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CalendarRange, FileText, Check } from "lucide-react";
-import { format, parseISO, startOfQuarter, endOfQuarter, addQuarters, isBefore, isAfter, isSameQuarter } from "date-fns";
+import { format, parseISO, startOfQuarter, addQuarters, isBefore, isAfter, isSameQuarter } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface QuarterRecord {
@@ -40,7 +39,6 @@ interface QuarterOption {
   value: string;
   label: string;
   date: Date;
-  isToday?: boolean;
 }
 
 export const TimeWindowSelector = ({
@@ -50,18 +48,16 @@ export const TimeWindowSelector = ({
   onRangeChange,
 }: TimeWindowSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [localRange, setLocalRange] = useState<[number, number]>([0, 100]);
-
-  // Min is role start date, max is today - roleStartDate should always be provided
-  const today = new Date();
-  const minDate = roleStartDate || today; // Fallback to today if somehow null
-  const maxDate = today;
+  
+  // Min is role start date, max is today
+  const today = useMemo(() => new Date(), []);
+  const minDate = roleStartDate || today;
 
   // Generate quarterly options from role start to today
   const quarterOptions = useMemo(() => {
     const options: QuarterOption[] = [];
     const startQ = startOfQuarter(minDate);
-    const endQ = startOfQuarter(maxDate);
+    const endQ = startOfQuarter(today);
     
     let current = startQ;
     let index = 0;
@@ -77,145 +73,106 @@ export const TimeWindowSelector = ({
       index++;
     }
     
-    // Add "Today" option at the end
-    options.push({
-      value: "today",
-      label: `Today (${format(today, "MMM d, yyyy")})`,
-      date: today,
-      isToday: true,
-    });
-    
     return options;
-  }, [minDate, maxDate]);
+  }, [minDate, today]);
 
-  // Get just quarterly options (without today) for slider steps
-  const quarterlySteps = useMemo(() => 
-    quarterOptions.filter(o => !o.isToday),
-  [quarterOptions]);
+  // Local state for dropdown selections - start quarter index and whether end is "today"
+  const [startIndex, setStartIndex] = useState(0);
+  const [endValue, setEndValue] = useState<string>("today"); // "today" or quarter index as string
 
-  // Timeline for slider
-  const timeline = useMemo(() => ({
-    start: startOfQuarter(minDate),
-    end: today,
-    totalQuarters: quarterlySteps.length,
-  }), [minDate, quarterlySteps.length]);
-
-  // Convert slider value to quarter index
-  const sliderToQuarterIndex = (value: number): number => {
-    const maxIndex = timeline.totalQuarters - 1;
-    return Math.round((value / 100) * maxIndex);
-  };
-
-  // Convert quarter index to slider value
-  const quarterIndexToSlider = (index: number): number => {
-    const maxIndex = Math.max(timeline.totalQuarters - 1, 1);
-    return (index / maxIndex) * 100;
-  };
-
-  // Convert date to quarter index
-  const dateToQuarterIndex = (date: Date): number => {
-    const startQ = startOfQuarter(minDate);
-    const targetQ = startOfQuarter(date);
-    let index = 0;
-    let current = startQ;
-    
-    while (isBefore(current, targetQ) && index < quarterlySteps.length - 1) {
-      current = addQuarters(current, 1);
-      index++;
-    }
-    
-    return index;
-  };
-
-  // Get date from quarter index
-  const quarterIndexToDate = (index: number): Date => {
-    return quarterlySteps[Math.min(index, quarterlySteps.length - 1)]?.date || timeline.start;
-  };
-
-  // Initialize local range from selected range
+  // Initialize from selectedRange when dialog opens
   useEffect(() => {
-    if (isOpen) {
-      const startIdx = dateToQuarterIndex(selectedRange[0]);
-      const endIdx = dateToQuarterIndex(selectedRange[1]);
-      setLocalRange([
-        quarterIndexToSlider(startIdx),
-        quarterIndexToSlider(endIdx),
-      ]);
+    if (isOpen && quarterOptions.length > 0) {
+      // Find start quarter index
+      const startQ = startOfQuarter(selectedRange[0]);
+      let foundStartIdx = 0;
+      for (let i = 0; i < quarterOptions.length; i++) {
+        if (isSameQuarter(quarterOptions[i].date, startQ)) {
+          foundStartIdx = i;
+          break;
+        }
+      }
+      setStartIndex(foundStartIdx);
+      
+      // Check if end is "today" (not exactly end of a quarter)
+      // Default to "today" always
+      setEndValue("today");
     }
-  }, [isOpen, selectedRange, timeline]);
+  }, [isOpen, selectedRange, quarterOptions]);
 
-  // Current dropdown values
-  const startQuarterIndex = sliderToQuarterIndex(localRange[0]);
-  const endQuarterIndex = sliderToQuarterIndex(localRange[1]);
+  // Get the end date based on endValue
+  const getEndDate = (): Date => {
+    if (endValue === "today") {
+      return today;
+    }
+    const idx = parseInt(endValue);
+    const quarterDate = quarterOptions[idx]?.date;
+    if (!quarterDate) return today;
+    // Return today if it's the current quarter, otherwise end of that quarter
+    if (isSameQuarter(quarterDate, today)) {
+      return today;
+    }
+    // For past quarters, use today as max (they selected a past quarter as end)
+    return today;
+  };
 
-  // Dropdown options filtered by position
-  const startOptions = useMemo(() => 
-    quarterOptions.filter((_, i) => i <= endQuarterIndex || quarterOptions[i]?.isToday === false),
-  [quarterOptions, endQuarterIndex]);
-
-  const endOptions = useMemo(() => 
-    quarterOptions.filter((o, i) => i >= startQuarterIndex || o.isToday),
-  [quarterOptions, startQuarterIndex]);
-
-  // Get quarters within the current local range
+  // Get quarters within the current selection
   const quartersInRange = useMemo(() => {
-    const startDate = quarterIndexToDate(startQuarterIndex);
-    const endDate = endQuarterIndex === quarterlySteps.length - 1 || localRange[1] === 100
-      ? today
-      : endOfQuarter(quarterIndexToDate(endQuarterIndex));
+    if (quarterOptions.length === 0) return [];
+    
+    const startDate = quarterOptions[startIndex]?.date || startOfQuarter(minDate);
+    const endDate = getEndDate();
     
     return quarterRecords.filter(q => {
       const qStart = parseISO(q.quarter_start_date);
       return (isAfter(qStart, startOfQuarter(startDate)) || isSameQuarter(qStart, startDate)) && 
              (isBefore(qStart, endDate) || isSameQuarter(qStart, startOfQuarter(endDate)));
     });
-  }, [startQuarterIndex, endQuarterIndex, quarterRecords, quarterlySteps, localRange]);
+  }, [startIndex, endValue, quarterRecords, quarterOptions, minDate]);
 
   // Count total patterns in range
   const totalPatterns = quartersInRange.reduce((sum, q) => sum + q.pattern_count, 0);
 
-  const handleSliderChange = (values: number[]) => {
-    // Ensure left <= right
-    const newStart = Math.min(values[0], values[1]);
-    const newEnd = Math.max(values[0], values[1]);
-    setLocalRange([newStart, newEnd]);
-  };
-
   const handleStartChange = (value: string) => {
-    if (value === "today") return; // Today can only be end
     const idx = parseInt(value);
-    // Ensure start <= end
-    const newEndIdx = Math.max(idx, endQuarterIndex);
-    setLocalRange([
-      quarterIndexToSlider(idx),
-      quarterIndexToSlider(newEndIdx),
-    ]);
+    setStartIndex(idx);
+    
+    // If end is a quarter index and now less than start, reset to today
+    if (endValue !== "today") {
+      const endIdx = parseInt(endValue);
+      if (endIdx < idx) {
+        setEndValue("today");
+      }
+    }
   };
 
   const handleEndChange = (value: string) => {
     if (value === "today") {
-      // Set to max slider value
-      setLocalRange([localRange[0], 100]);
+      setEndValue("today");
       return;
     }
     const idx = parseInt(value);
-    // Ensure start <= end
-    const newStartIdx = Math.min(idx, startQuarterIndex);
-    setLocalRange([
-      quarterIndexToSlider(newStartIdx),
-      quarterIndexToSlider(idx),
-    ]);
+    // Ensure end >= start
+    if (idx >= startIndex) {
+      setEndValue(value);
+    }
   };
 
   const handleApply = () => {
-    const startDate = quarterIndexToDate(startQuarterIndex);
-    const endDate = localRange[1] >= 99 ? today : endOfQuarter(quarterIndexToDate(endQuarterIndex));
+    const startDate = quarterOptions[startIndex]?.date || startOfQuarter(minDate);
+    const endDate = getEndDate();
     onRangeChange([startOfQuarter(startDate), endDate]);
     setIsOpen(false);
   };
 
   // Format the current range for display
-  const rangeLabel = `${format(selectedRange[0], "MMM yyyy")} – ${format(selectedRange[1], "MMM yyyy")}`;
+  const formatEndDate = (date: Date) => {
+    // Check if it's close to today (within same day)
+    const isToday = date.toDateString() === today.toDateString();
+    return isToday ? `Today` : format(date, "MMM yyyy");
+  };
+  
+  const rangeLabel = `${format(selectedRange[0], "MMM yyyy")} – ${formatEndDate(selectedRange[1])}`;
   
   // Count quarters in selected range
   const selectedQuarterCount = quarterRecords.filter(q => {
@@ -224,16 +181,17 @@ export const TimeWindowSelector = ({
            (isBefore(qStart, selectedRange[1]) || isSameQuarter(qStart, startOfQuarter(selectedRange[1])));
   }).length;
 
-  // Get current dropdown display values
-  const getStartDisplayValue = () => {
-    const opt = quarterlySteps[startQuarterIndex];
-    return opt ? startQuarterIndex.toString() : "0";
+  // Get end dropdown display value
+  const getEndDisplayLabel = () => {
+    if (endValue === "today") {
+      return `Today (${format(today, "MMM d")})`;
+    }
+    const idx = parseInt(endValue);
+    return quarterOptions[idx]?.label || "Today";
   };
 
-  const getEndDisplayValue = () => {
-    if (localRange[1] >= 99) return "today";
-    return endQuarterIndex.toString();
-  };
+  // Single quarter edge case - only show dropdowns, no slider needed
+  const isSingleQuarter = quarterOptions.length === 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -259,56 +217,46 @@ export const TimeWindowSelector = ({
         </DialogHeader>
         
         <div className="space-y-6 pt-4">
-          {/* Timeline Labels */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-muted-foreground px-1">
-              <span>{format(timeline.start, "MMM yyyy")}</span>
-              <span>Today</span>
-            </div>
-            
-            {/* Dual Range Slider */}
-            <div className="px-1">
-              <Slider
-                value={localRange}
-                onValueChange={handleSliderChange}
-                min={0}
-                max={100}
-                step={timeline.totalQuarters > 1 ? 100 / (timeline.totalQuarters - 1) : 100}
-                className="cursor-pointer"
-              />
-            </div>
-            
-            {/* Selected Range Dropdowns */}
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <Select value={getStartDisplayValue()} onValueChange={handleStartChange}>
+          {/* Date Range Info */}
+          <div className="text-center text-sm text-muted-foreground">
+            Role started {format(minDate, "MMM d, yyyy")}
+          </div>
+
+          {/* Selected Range Dropdowns */}
+          <div className="flex items-center justify-center gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium">From</label>
+              <Select value={startIndex.toString()} onValueChange={handleStartChange}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {quarterlySteps.map((opt, idx) => (
+                  {quarterOptions.map((opt, idx) => (
                     <SelectItem 
                       key={opt.value} 
                       value={idx.toString()}
-                      disabled={idx > endQuarterIndex}
                     >
                       {opt.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
-              <span className="text-muted-foreground text-sm">to</span>
-              
-              <Select value={getEndDisplayValue()} onValueChange={handleEndChange}>
+            </div>
+            
+            <span className="text-muted-foreground text-sm mt-6">to</span>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground font-medium">To</label>
+              <Select value={endValue} onValueChange={handleEndChange}>
                 <SelectTrigger className="w-[160px]">
-                  <SelectValue />
+                  <SelectValue>{getEndDisplayLabel()}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {quarterlySteps.map((opt, idx) => (
+                  {quarterOptions.map((opt, idx) => (
                     <SelectItem 
                       key={opt.value} 
                       value={idx.toString()}
-                      disabled={idx < startQuarterIndex}
+                      disabled={idx < startIndex}
                     >
                       {opt.label}
                     </SelectItem>
@@ -335,6 +283,7 @@ export const TimeWindowSelector = ({
                 <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
                   <FileText className="h-8 w-8 mb-2 opacity-50" />
                   <p className="text-sm">No quarterly records in this range</p>
+                  <p className="text-xs mt-1">Complete a quarterly distillation first</p>
                 </div>
               ) : (
                 <div className="p-2 space-y-1">
